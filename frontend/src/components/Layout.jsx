@@ -223,9 +223,9 @@ export default function Layout() {
 
 export function Avatar({ user, size = 'md' }) {
   const sizes = { sm: 'w-8 h-8 text-xs', md: 'w-10 h-10 text-sm', lg: 'w-16 h-16 text-xl' }
-  const API = import.meta.env.VITE_API_URL || ''
+  const base = (typeof window !== 'undefined' ? window.__ENV__?.VITE_API_URL : null) || import.meta.env.VITE_API_URL || ''
   if (user?.avatar_url) {
-    return <img src={`${API}${user.avatar_url}`} alt={user.full_name} className={`${sizes[size]} rounded-full object-cover`} />
+    return <img src={`${base}${user.avatar_url}`} alt={user.full_name} className={`${sizes[size]} rounded-full object-cover`} />
   }
   const initials = user?.full_name?.split(' ').map(w => w[0]).slice(0,2).join('') || '?'
   return (

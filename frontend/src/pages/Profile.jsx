@@ -5,8 +5,6 @@ import { useAuth } from '../context/AuthContext'
 import { Avatar } from '../components/Layout'
 import PostCard from '../components/PostCard'
 import toast from 'react-hot-toast'
-
-const API = import.meta.env.VITE_API_URL || ''
 const ROLES = { student: 'Alumno', teacher: 'Maestro', parent: 'Padre de familia', moderator: 'Moderador', superuser: 'Superusuario' }
 
 export default function Profile() {

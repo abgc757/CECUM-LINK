@@ -5,8 +5,6 @@ import { Avatar } from '../components/Layout'
 import PostCard from '../components/PostCard'
 import toast from 'react-hot-toast'
 
-const API = import.meta.env.VITE_API_URL || ''
-
 export default function Feed() {
   const { user } = useAuth()
   const [posts, setPosts] = useState([])

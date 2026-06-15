@@ -1,14 +1,14 @@
 import axios from 'axios'
 
-// En Render, window.__ENV__ es inyectado en runtime por entrypoint.render.sh
-// En Docker local, las variables VITE_* vienen del build
-// En desarrollo local (vite dev), el proxy de vite.config.js maneja /api
-const runtimeEnv = typeof window !== 'undefined' ? window.__ENV__ : {}
+// Prioridad: window.__ENV__ (runtime en Render) > import.meta.env (build-time) > ''
+const runtimeEnv = typeof window !== 'undefined' ? (window.__ENV__ || {}) : {}
 
-const BASE = (runtimeEnv?.VITE_API_URL ?? import.meta.env.VITE_API_URL ?? '') + '/api'
+export const getApiBase = () =>
+  runtimeEnv.VITE_API_URL ?? import.meta.env.VITE_API_URL ?? ''
 
-const api = axios.create({ baseURL: BASE })
+export const SOCKET_URL =
+  runtimeEnv.VITE_SOCKET_URL ?? import.meta.env.VITE_SOCKET_URL ?? ''
 
-export const SOCKET_URL = runtimeEnv?.VITE_SOCKET_URL ?? import.meta.env.VITE_SOCKET_URL ?? ''
+const api = axios.create({ baseURL: getApiBase() + '/api' })
 
 export default api

@@ -18,9 +18,10 @@ export default function Messages() {
   const [search, setSearch] = useState('')
   const [searchResults, setSearchResults] = useState([])
   const [searching, setSearching] = useState(false)
+  // En móvil: 'list' | 'chat'
+  const [mobileView, setMobileView] = useState('list')
   const bottomRef = useRef()
   const socketRef = useRef()
-  const searchRef = useRef()
 
   useEffect(() => {
     socketRef.current = io(SOCKET_URL)
@@ -53,6 +54,7 @@ export default function Messages() {
     setMessages(msgs)
     setSearch('')
     setSearchResults([])
+    setMobileView('chat')
     navigate(`/messages/${uid}`, { replace: true })
   }
 
@@ -79,12 +81,22 @@ export default function Messages() {
     setSearching(false)
   }
 
+  const backToList = () => {
+    setMobileView('list')
+    setActiveUser(null)
+    navigate('/messages', { replace: true })
+  }
+
   return (
-    <div className="max-w-4xl mx-auto h-[calc(100vh-8rem)] card overflow-hidden flex">
-      {/* Panel izquierdo — conversaciones */}
-      <div className="w-72 border-r border-gray-100 flex flex-col flex-shrink-0">
-        {/* Buscador siempre visible */}
-        <div className="p-3 border-b border-gray-100 space-y-1" ref={searchRef}>
+    <div className="max-w-4xl mx-auto card overflow-hidden flex" style={{ height: 'calc(100vh - 8rem)' }}>
+
+      {/* Panel izquierdo — siempre visible en desktop, ocultado en móvil cuando hay chat abierto */}
+      <div className={`
+        flex-shrink-0 border-r border-gray-100 flex flex-col
+        w-full md:w-72
+        ${mobileView === 'chat' ? 'hidden md:flex' : 'flex'}
+      `}>
+        <div className="p-3 border-b border-gray-100 space-y-1">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-1">Nuevo mensaje</p>
           <div className="relative">
             <svg className="w-4 h-4 absolute left-2.5 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -97,21 +109,13 @@ export default function Messages() {
               onChange={e => doSearch(e.target.value)}
             />
           </div>
-
           {search.trim() && (
             <div className="bg-white border border-gray-100 rounded-lg overflow-hidden shadow-sm">
-              {searching && (
-                <div className="p-3 text-center text-xs text-gray-400">Buscando...</div>
-              )}
-              {!searching && searchResults.length === 0 && (
-                <div className="p-3 text-center text-xs text-gray-400">Sin resultados</div>
-              )}
+              {searching && <div className="p-3 text-center text-xs text-gray-400">Buscando...</div>}
+              {!searching && searchResults.length === 0 && <div className="p-3 text-center text-xs text-gray-400">Sin resultados</div>}
               {searchResults.map(u => (
-                <button
-                  key={u.id}
-                  onClick={() => openConversation(u)}
-                  className="w-full flex items-center gap-2 p-2.5 hover:bg-primary-50 text-left transition-colors"
-                >
+                <button key={u.id} onClick={() => openConversation(u)}
+                  className="w-full flex items-center gap-2 p-2.5 hover:bg-primary-50 text-left transition-colors">
                   <Avatar user={u} size="sm" />
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{u.full_name}</p>
@@ -123,20 +127,16 @@ export default function Messages() {
           )}
         </div>
 
-        {/* Lista de conversaciones */}
         <div className="flex-1 overflow-y-auto">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 pt-3 pb-1">Mensajes recientes</p>
           {conversations.length === 0 && (
             <p className="text-center text-xs text-gray-400 p-6">
-              Usa el buscador de arriba para enviar tu primer mensaje
+              Usa el buscador para enviar tu primer mensaje
             </p>
           )}
           {conversations.map(c => (
-            <button
-              key={c.other_id}
-              onClick={() => openConversation(c)}
-              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-left border-b border-gray-50 transition-colors ${activeUser?.id === parseInt(c.other_id) ? 'bg-primary-50 border-l-2 border-l-primary' : ''}`}
-            >
+            <button key={c.other_id} onClick={() => openConversation(c)}
+              className={`w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-left border-b border-gray-50 transition-colors ${activeUser?.id === parseInt(c.other_id) ? 'bg-primary-50 border-l-2 border-l-primary' : ''}`}>
               <div className="relative flex-shrink-0">
                 <Avatar user={c} size="sm" />
                 {c.unread_count > 0 && (
@@ -152,11 +152,20 @@ export default function Messages() {
         </div>
       </div>
 
-      {/* Panel derecho — conversación activa */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Panel derecho — chat */}
+      <div className={`
+        flex-1 flex flex-col min-w-0
+        ${mobileView === 'list' ? 'hidden md:flex' : 'flex'}
+      `}>
         {activeUser ? (
           <>
             <div className="px-4 py-3 border-b border-gray-100 flex items-center gap-3 bg-white">
+              {/* Botón volver — solo móvil */}
+              <button onClick={backToList} className="md:hidden p-1 -ml-1 text-gray-500 hover:text-primary">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                </svg>
+              </button>
               <Avatar user={activeUser} size="sm" />
               <div>
                 <p className="font-semibold text-sm text-gray-900">{activeUser.full_name}</p>
@@ -174,7 +183,7 @@ export default function Messages() {
                 const mine = m.sender_id === user.id
                 return (
                   <div key={i} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-xs lg:max-w-sm px-4 py-2 rounded-2xl text-sm shadow-sm ${mine ? 'bg-primary text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm'}`}>
+                    <div className={`max-w-[75%] px-4 py-2 rounded-2xl text-sm shadow-sm ${mine ? 'bg-primary text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm'}`}>
                       {m.content}
                       <p className={`text-xs mt-1 ${mine ? 'text-primary-200' : 'text-gray-400'}`}>
                         {formatDistanceToNow(new Date(m.created_at), { locale: es, addSuffix: true })}
@@ -193,7 +202,7 @@ export default function Messages() {
                 value={text}
                 onChange={e => setText(e.target.value)}
               />
-              <button type="submit" className="btn-primary text-sm px-4" disabled={!text.trim()}>
+              <button type="submit" className="btn-primary px-4" disabled={!text.trim()}>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
@@ -201,7 +210,7 @@ export default function Messages() {
             </form>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center bg-gray-50">
+          <div className="flex-1 hidden md:flex items-center justify-center bg-gray-50">
             <div className="text-center text-gray-300 space-y-3">
               <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />

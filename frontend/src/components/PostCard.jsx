@@ -4,10 +4,8 @@ import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
 import { Avatar } from './Layout'
 import { useAuth } from '../context/AuthContext'
-import api from '../api'
+import api, { getApiBase } from '../api'
 import toast from 'react-hot-toast'
-
-const API = import.meta.env.VITE_API_URL || ''
 
 export default function PostCard({ post, onDelete }) {
   const { user } = useAuth()
@@ -63,6 +61,7 @@ export default function PostCard({ post, onDelete }) {
       <div className="flex items-start justify-between">
         <button onClick={() => navigate(`/profile/${post.user_id}`)} className="flex items-center gap-3 hover:opacity-80">
           <Avatar user={{ full_name: post.full_name, avatar_url: post.avatar_url }} size="md" />
+
           <div className="text-left">
             <p className="font-semibold text-sm text-gray-900">{post.full_name}</p>
             <p className="text-xs text-gray-400">@{post.username} · {formatDistanceToNow(new Date(post.created_at), { locale: es, addSuffix: true })}</p>
@@ -78,7 +77,7 @@ export default function PostCard({ post, onDelete }) {
       <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">{post.content}</p>
 
       {post.image_url && (
-        <img src={`${API}${post.image_url}`} alt="" className="rounded-lg w-full object-cover max-h-80" />
+        <img src={`${getApiBase()}${post.image_url}`} alt="" className="rounded-lg w-full object-cover max-h-80" />
       )}
 
       <div className="flex items-center gap-4 pt-1 border-t border-gray-100">
