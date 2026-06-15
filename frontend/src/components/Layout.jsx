@@ -4,10 +4,8 @@ import { useEffect, useState, useRef } from 'react'
 import { io } from 'socket.io-client'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
-import api from '../api'
+import api, { SOCKET_URL } from '../api'
 import toast from 'react-hot-toast'
-
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || ''
 
 const NOTIF_ICONS = {
   like: '❤️',

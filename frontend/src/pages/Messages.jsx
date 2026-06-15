@@ -1,13 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { io } from 'socket.io-client'
-import api from '../api'
+import api, { SOCKET_URL } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { Avatar } from '../components/Layout'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
-
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || ''
 
 export default function Messages() {
   const { user } = useAuth()

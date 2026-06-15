@@ -1,0 +1,16 @@
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+# En Render las URLs se inyectan en runtime via window.__ENV__
+# El build usa cadenas vacías; la app leerá window.__ENV__ al ejecutarse
+RUN VITE_API_URL="" VITE_SOCKET_URL="" npm run build
+
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+COPY nginx.render.conf.template /etc/nginx/templates/nginx.conf.template
+COPY entrypoint.render.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh && apk add --no-cache gettext
+EXPOSE 80
+ENTRYPOINT ["/entrypoint.sh"]
