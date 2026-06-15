@@ -1,0 +1,22 @@
+# Variables de entorno (credenciales)
+.env
+
+# Dependencias
+node_modules/
+*/node_modules/
+
+# Build
+frontend/dist/
+frontend/.vite/
+
+# Uploads generados en runtime
+backend/uploads/*
+!backend/uploads/.gitkeep
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
