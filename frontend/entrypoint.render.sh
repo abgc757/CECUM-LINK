@@ -8,8 +8,8 @@ fi
 
 echo "==> Backend URL: https://${BACKEND_URL}"
 
-# Generar nginx.conf estatico (sin proxy, solo SPA)
-envsubst < /etc/nginx/templates/nginx.conf.template > /etc/nginx/conf.d/default.conf
+# Copiar nginx.conf directamente (sin envsubst — no hay variables nginx que sustituir)
+cp /etc/nginx/templates/nginx.conf.template /etc/nginx/conf.d/default.conf
 
 # Inyectar URLs del backend para que React las lea en runtime
 cat > /usr/share/nginx/html/env-config.js <<ENVEOF
@@ -19,5 +19,5 @@ window.__ENV__ = {
 };
 ENVEOF
 
-echo "==> env-config.js listo"
+echo "==> env-config.js generado correctamente"
 exec nginx -g 'daemon off;'
