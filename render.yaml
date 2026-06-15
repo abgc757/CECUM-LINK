@@ -26,7 +26,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: FRONTEND_URL
-        sync: false
+        value: https://cecumlink-frontend.onrender.com
 
   - type: web
     name: cecumlink-frontend
@@ -37,7 +37,4 @@ services:
     plan: free
     envVars:
       - key: BACKEND_URL
-        fromService:
-          name: cecumlink-backend
-          type: web
-          property: host
+        value: cecumlink-backend.onrender.com

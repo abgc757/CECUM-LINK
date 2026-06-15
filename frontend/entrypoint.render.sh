@@ -1,10 +1,21 @@
 #!/bin/sh
 set -e
 
-# Inyectar BACKEND_URL en el config de nginx en runtime
-envsubst '${BACKEND_URL}' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/conf.d/default.conf
+# BACKEND_URL debe estar definida (ej: cecumlink-backend.onrender.com)
+if [ -z "$BACKEND_URL" ]; then
+  echo "ERROR: La variable BACKEND_URL no esta definida."
+  echo "Agrega BACKEND_URL=<tu-backend>.onrender.com en el panel de Render."
+  exit 1
+fi
 
-# Inyectar la URL del backend en la app React (window.__ENV__)
+echo "==> Backend URL: $BACKEND_URL"
+
+# Generar nginx.conf con la URL real del backend
+envsubst '${BACKEND_URL}' \
+  < /etc/nginx/templates/nginx.conf.template \
+  > /etc/nginx/conf.d/default.conf
+
+# Generar env-config.js para que React lea las URLs en runtime
 cat > /usr/share/nginx/html/env-config.js <<EOF
 window.__ENV__ = {
   VITE_API_URL: "https://${BACKEND_URL}",
@@ -12,4 +23,6 @@ window.__ENV__ = {
 };
 EOF
 
+echo "==> env-config.js generado"
+echo "==> Iniciando nginx..."
 exec nginx -g 'daemon off;'
