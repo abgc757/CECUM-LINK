@@ -27,7 +27,7 @@ router.post('/', auth, async (req, res) => {
 
 router.post('/:id/submit', auth, upload.single('file'), async (req, res) => {
   const { content } = req.body;
-  const file_url = getImageUrl(req.file);
+  const file_url = await getImageUrl(req.file);
   const { rows } = await pool.query(
     `INSERT INTO task_submissions (task_id, user_id, content, file_url)
      VALUES ($1,$2,$3,$4)

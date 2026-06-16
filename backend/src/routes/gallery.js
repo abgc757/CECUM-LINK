@@ -18,7 +18,7 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
   const { caption, group_id } = req.body;
   const { rows } = await pool.query(
     `INSERT INTO gallery (user_id, group_id, image_url, caption) VALUES ($1,$2,$3,$4) RETURNING *`,
-    [req.user.id, group_id || null, getImageUrl(req.file), caption]
+    [req.user.id, group_id || null, await getImageUrl(req.file), caption]
   );
   res.status(201).json(rows[0]);
 });

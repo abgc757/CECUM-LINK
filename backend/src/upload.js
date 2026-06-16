@@ -1,16 +1,13 @@
 const multer = require('multer');
 const { v2: cloudinary } = require('cloudinary');
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const { v4: uuidv4 } = require('uuid');
+const path = require('path');
 
-// Si hay credenciales de Cloudinary, usar storage en la nube
-// Si no, usar disco local (para Docker local)
 const useCloudinary = !!(
   process.env.CLOUDINARY_CLOUD_NAME &&
   process.env.CLOUDINARY_API_KEY &&
   process.env.CLOUDINARY_API_SECRET
 );
-
-let upload;
 
 if (useCloudinary) {
   cloudinary.config({
@@ -18,33 +15,33 @@ if (useCloudinary) {
     api_key: process.env.CLOUDINARY_API_KEY,
     api_secret: process.env.CLOUDINARY_API_SECRET,
   });
-
-  const storage = new CloudinaryStorage({
-    cloudinary,
-    params: (req, file) => ({
-      folder: 'cecumlink',
-      allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-      transformation: [{ quality: 'auto', fetch_format: 'auto' }],
-    }),
-  });
-
-  upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
-} else {
-  const path = require('path');
-  const { v4: uuidv4 } = require('uuid');
-  const diskStorage = multer.diskStorage({
-    destination: 'uploads/',
-    filename: (_, file, cb) => cb(null, uuidv4() + path.extname(file.originalname)),
-  });
-  upload = multer({ storage: diskStorage, limits: { fileSize: 10 * 1024 * 1024 } });
 }
 
-// Normaliza la URL de la imagen: si es Cloudinary devuelve URL completa,
-// si es disco local devuelve /uploads/filename para que funcione con el proxy nginx
-function getImageUrl(file) {
+// Multer siempre guarda en memoria; la ruta decide dónde persistir
+const upload = multer({
+  storage: useCloudinary ? multer.memoryStorage() : multer.diskStorage({
+    destination: 'uploads/',
+    filename: (_, file, cb) => cb(null, uuidv4() + path.extname(file.originalname)),
+  }),
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
+
+// Sube el buffer a Cloudinary y devuelve la URL pública
+async function uploadToCloudinary(file) {
+  return new Promise((resolve, reject) => {
+    const stream = cloudinary.uploader.upload_stream(
+      { folder: 'cecumlink', resource_type: 'auto' },
+      (err, result) => err ? reject(err) : resolve(result.secure_url)
+    );
+    stream.end(file.buffer);
+  });
+}
+
+// Normaliza la URL: Cloudinary → URL absoluta, disco → /uploads/filename
+async function getImageUrl(file) {
   if (!file) return null;
-  if (file.path && file.path.startsWith('http')) return file.path; // Cloudinary
-  return `/uploads/${file.filename}`; // disco local
+  if (useCloudinary) return uploadToCloudinary(file);
+  return `/uploads/${file.filename}`;
 }
 
 module.exports = { upload, getImageUrl };
