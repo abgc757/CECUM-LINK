@@ -6,6 +6,7 @@ COPY . .
 # En Render las URLs se inyectan en runtime via window.__ENV__
 # El build usa cadenas vacías; la app leerá window.__ENV__ al ejecutarse
 RUN VITE_API_URL="" VITE_SOCKET_URL="" npm run build
+# cache-bust: 2026-06-16
 
 FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
