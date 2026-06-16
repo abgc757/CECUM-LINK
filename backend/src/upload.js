@@ -30,8 +30,15 @@ const upload = multer({
 async function uploadToCloudinary(file) {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder: 'cecumlink', resource_type: 'auto' },
-      (err, result) => err ? reject(err) : resolve(result.secure_url)
+      { folder: 'cecumlink', resource_type: 'image' },
+      (err, result) => {
+        if (err) {
+          console.error('[Cloudinary] Error al subir imagen:', err);
+          return reject(err);
+        }
+        console.log('[Cloudinary] Imagen subida:', result.secure_url);
+        resolve(result.secure_url);
+      }
     );
     stream.end(file.buffer);
   });

@@ -31,7 +31,15 @@ router.patch('/me', auth, upload.single('avatar'), async (req, res) => {
   let i = 1;
   if (full_name) { updates.push(`full_name=$${i++}`); params.push(full_name); }
   if (bio !== undefined) { updates.push(`bio=$${i++}`); params.push(bio); }
-  if (req.file) { updates.push(`avatar_url=$${i++}`); params.push(await getImageUrl(req.file)); }
+  if (req.file) {
+    try {
+      const url = await getImageUrl(req.file);
+      updates.push(`avatar_url=$${i++}`); params.push(url);
+    } catch (err) {
+      console.error('[users] Error subiendo avatar:', err.message);
+      return res.status(500).json({ error: 'Error al subir la imagen' });
+    }
+  }
   if (!updates.length) return res.status(400).json({ error: 'Nada que actualizar' });
   params.push(req.user.id);
   const { rows } = await pool.query(
