@@ -1,12 +1,14 @@
 import { useState, useEffect, useRef } from 'react'
 import api from '../api'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import { Avatar } from '../components/Layout'
 import PostCard from '../components/PostCard'
 import toast from 'react-hot-toast'
 
 export default function Feed() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [posts, setPosts] = useState([])
   const [loading, setLoading] = useState(true)
   const [content, setContent] = useState('')
@@ -34,9 +36,9 @@ export default function Feed() {
       setPosts(p => [{ ...data, username: user.username, full_name: user.full_name, avatar_url: user.avatar_url, likes_count: 0, comments_count: 0, liked: false }, ...p])
       setContent('')
       setImage(null)
-      toast.success('¡Publicación creada!')
+      toast.success(t('feed.published'))
     } catch {
-      toast.error('Error al publicar')
+      toast.error(t('feed.publishError'))
     } finally {
       setPosting(false)
     }
@@ -51,7 +53,7 @@ export default function Feed() {
             <textarea
               className="input resize-none"
               rows={3}
-              placeholder="¿Qué quieres compartir con la comunidad CECUM?"
+              placeholder={t('feed.placeholder')}
               value={content}
               onChange={e => setContent(e.target.value)}
             />
@@ -64,11 +66,11 @@ export default function Feed() {
             <div className="flex items-center justify-between">
               <button type="button" onClick={() => fileRef.current.click()} className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                Foto
+                {t('feed.photo')}
               </button>
               <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => setImage(e.target.files[0])} />
               <button type="submit" className="btn-primary text-sm" disabled={posting || !content.trim()}>
-                {posting ? 'Publicando...' : 'Publicar'}
+                {posting ? t('feed.publishing') : t('feed.publish')}
               </button>
             </div>
           </form>
@@ -80,7 +82,7 @@ export default function Feed() {
       ) : posts.length === 0 ? (
         <div className="card p-12 text-center text-gray-400">
           <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" /></svg>
-          <p>Sé el primero en publicar algo</p>
+          <p>{t('feed.empty')}</p>
         </div>
       ) : (
         posts.map(p => <PostCard key={p.id} post={p} onDelete={id => setPosts(ps => ps.filter(x => x.id !== id))} />)

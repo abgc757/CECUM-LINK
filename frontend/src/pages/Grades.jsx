@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import api from '../api'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import toast from 'react-hot-toast'
 
 export default function Grades() {
   const { user } = useAuth()
+  const { t } = useLanguage()
   const [grades, setGrades] = useState([])
   const [students, setStudents] = useState([])
   const [creating, setCreating] = useState(false)
@@ -31,7 +33,7 @@ export default function Grades() {
     setGrades(g => [data, ...g])
     setForm({ student_id: '', subject: '', grade_value: '', period: '', notes: '' })
     setCreating(false)
-    toast.success('Calificación registrada')
+    toast.success(t('grades.registered'))
   }
 
   const filteredStudents = students.filter(s =>
@@ -44,14 +46,14 @@ export default function Grades() {
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Calificaciones</h1>
-        {isTeacher && <button onClick={() => setCreating(v => !v)} className="btn-primary text-sm">+ Registrar calificación</button>}
+        <h1 className="text-2xl font-bold text-gray-900">{t('grades.title')}</h1>
+        {isTeacher && <button onClick={() => setCreating(v => !v)} className="btn-primary text-sm">{t('grades.register')}</button>}
       </div>
 
       {isTeacher && (
         <div className="card p-4">
-          <label className="label">Consultar alumno</label>
-          <input className="input mb-2" placeholder="Buscar alumno..." value={searchQ} onChange={e => setSearchQ(e.target.value)} />
+          <label className="label">{t('grades.searchStudent')}</label>
+          <input className="input mb-2" placeholder={t('grades.searchPlaceholder')} value={searchQ} onChange={e => setSearchQ(e.target.value)} />
           <div className="max-h-48 overflow-y-auto space-y-1">
             {filteredStudents.slice(0, 10).map(s => (
               <button key={s.id} onClick={() => { loadStudentGrades(s.id); setForm(f => ({ ...f, student_id: s.id })) }}
@@ -66,27 +68,27 @@ export default function Grades() {
 
       {creating && isTeacher && (
         <div className="card p-6 space-y-4">
-          <h2 className="font-semibold">Nueva calificación</h2>
+          <h2 className="font-semibold">{t('grades.new')}</h2>
           <form onSubmit={submit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="label">Materia *</label>
-              <input className="input" required value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} placeholder="Matemáticas" />
+              <label className="label">{t('grades.subject')}</label>
+              <input className="input" required value={form.subject} onChange={e => setForm(f => ({ ...f, subject: e.target.value }))} placeholder={t('grades.subjectPlaceholder')} />
             </div>
             <div>
-              <label className="label">Calificación * (0-10)</label>
+              <label className="label">{t('grades.gradeValue')}</label>
               <input type="number" className="input" required min="0" max="10" step="0.1" value={form.grade_value} onChange={e => setForm(f => ({ ...f, grade_value: e.target.value }))} />
             </div>
             <div>
-              <label className="label">Periodo</label>
-              <input className="input" value={form.period} onChange={e => setForm(f => ({ ...f, period: e.target.value }))} placeholder="1er Bimestre" />
+              <label className="label">{t('grades.period')}</label>
+              <input className="input" value={form.period} onChange={e => setForm(f => ({ ...f, period: e.target.value }))} placeholder={t('grades.periodPlaceholder')} />
             </div>
             <div>
-              <label className="label">Observaciones</label>
+              <label className="label">{t('grades.notes')}</label>
               <input className="input" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
             </div>
             <div className="sm:col-span-2 flex gap-2 justify-end">
-              <button type="button" onClick={() => setCreating(false)} className="btn-secondary text-sm">Cancelar</button>
-              <button type="submit" className="btn-primary text-sm" disabled={!form.student_id}>Registrar</button>
+              <button type="button" onClick={() => setCreating(false)} className="btn-secondary text-sm">{t('grades.cancel')}</button>
+              <button type="submit" className="btn-primary text-sm" disabled={!form.student_id}>{t('grades.registerBtn')}</button>
             </div>
           </form>
         </div>
@@ -96,15 +98,15 @@ export default function Grades() {
         <div className="grid grid-cols-3 gap-3">
           <div className="card p-4 text-center">
             <p className="text-3xl font-bold text-primary">{avg}</p>
-            <p className="text-xs text-gray-400 mt-1">Promedio general</p>
+            <p className="text-xs text-gray-400 mt-1">{t('grades.average')}</p>
           </div>
           <div className="card p-4 text-center">
             <p className="text-3xl font-bold text-green-500">{Math.max(...grades.map(g => g.grade_value))}</p>
-            <p className="text-xs text-gray-400 mt-1">Calificación más alta</p>
+            <p className="text-xs text-gray-400 mt-1">{t('grades.highest')}</p>
           </div>
           <div className="card p-4 text-center">
             <p className="text-3xl font-bold text-gray-400">{grades.length}</p>
-            <p className="text-xs text-gray-400 mt-1">Total registradas</p>
+            <p className="text-xs text-gray-400 mt-1">{t('grades.total')}</p>
           </div>
         </div>
       )}
@@ -112,17 +114,17 @@ export default function Grades() {
       {grades.length === 0 ? (
         <div className="card p-12 text-center text-gray-400">
           <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-          <p>{isTeacher ? 'Selecciona un alumno para ver sus calificaciones' : 'Sin calificaciones registradas aún'}</p>
+          <p>{isTeacher ? t('grades.empty.teacher') : t('grades.empty.student')}</p>
         </div>
       ) : (
         <div className="card overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50">
               <tr>
-                <th className="text-left p-3 text-gray-500 font-medium">Materia</th>
-                <th className="text-left p-3 text-gray-500 font-medium">Periodo</th>
-                <th className="text-center p-3 text-gray-500 font-medium">Calificación</th>
-                <th className="text-left p-3 text-gray-500 font-medium hidden sm:table-cell">Observaciones</th>
+                <th className="text-left p-3 text-gray-500 font-medium">{t('grades.col.subject')}</th>
+                <th className="text-left p-3 text-gray-500 font-medium">{t('grades.col.period')}</th>
+                <th className="text-center p-3 text-gray-500 font-medium">{t('grades.col.grade')}</th>
+                <th className="text-left p-3 text-gray-500 font-medium hidden sm:table-cell">{t('grades.col.notes')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">

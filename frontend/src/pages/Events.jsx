@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react'
 import api from '../api'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import toast from 'react-hot-toast'
 
 export default function Events() {
   const { user } = useAuth()
+  const { t, lang } = useLanguage()
   const [events, setEvents] = useState([])
   const [creating, setCreating] = useState(false)
   const [form, setForm] = useState({ title: '', description: '', event_date: '', location: '' })
@@ -17,50 +19,51 @@ export default function Events() {
     setEvents(ev => [...ev, { ...data, creator_name: user.full_name }].sort((a, b) => new Date(a.event_date) - new Date(b.event_date)))
     setForm({ title: '', description: '', event_date: '', location: '' })
     setCreating(false)
-    toast.success('Evento creado')
+    toast.success(t('events.created'))
   }
 
   const del = async (id) => {
-    if (!confirm('¿Eliminar evento?')) return
+    if (!confirm(t('events.confirmDelete'))) return
     await api.delete(`/events/${id}`)
     setEvents(ev => ev.filter(e => e.id !== id))
-    toast.success('Evento eliminado')
+    toast.success(t('events.deleted'))
   }
 
   const canCreate = ['teacher','moderator','superuser'].includes(user.role)
+  const locale = lang === 'en' ? 'en-US' : 'es-MX'
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Eventos</h1>
-        {canCreate && <button onClick={() => setCreating(v => !v)} className="btn-primary text-sm">+ Nuevo evento</button>}
+        <h1 className="text-2xl font-bold text-gray-900">{t('events.title')}</h1>
+        {canCreate && <button onClick={() => setCreating(v => !v)} className="btn-primary text-sm">{t('events.new')}</button>}
       </div>
 
       {creating && (
         <div className="card p-6 space-y-4">
-          <h2 className="font-semibold">Nuevo evento</h2>
+          <h2 className="font-semibold">{t('events.newTitle')}</h2>
           <form onSubmit={submit} className="space-y-3">
             <div>
-              <label className="label">Título *</label>
+              <label className="label">{t('events.titleLabel')}</label>
               <input className="input" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="label">Fecha y hora *</label>
+                <label className="label">{t('events.datetime')}</label>
                 <input type="datetime-local" className="input" required value={form.event_date} onChange={e => setForm(f => ({ ...f, event_date: e.target.value }))} />
               </div>
               <div>
-                <label className="label">Lugar</label>
-                <input className="input" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder="Ej: Auditorio principal" />
+                <label className="label">{t('events.location')}</label>
+                <input className="input" value={form.location} onChange={e => setForm(f => ({ ...f, location: e.target.value }))} placeholder={t('events.locationPlaceholder')} />
               </div>
             </div>
             <div>
-              <label className="label">Descripción</label>
+              <label className="label">{t('events.description')}</label>
               <textarea className="input" rows={2} value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
             </div>
             <div className="flex gap-2 justify-end">
-              <button type="button" onClick={() => setCreating(false)} className="btn-secondary text-sm">Cancelar</button>
-              <button type="submit" className="btn-primary text-sm">Crear evento</button>
+              <button type="button" onClick={() => setCreating(false)} className="btn-secondary text-sm">{t('events.cancel')}</button>
+              <button type="submit" className="btn-primary text-sm">{t('events.createBtn')}</button>
             </div>
           </form>
         </div>
@@ -69,7 +72,7 @@ export default function Events() {
       {events.length === 0 && (
         <div className="card p-12 text-center text-gray-400">
           <svg className="w-12 h-12 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-          <p>No hay eventos próximos</p>
+          <p>{t('events.empty')}</p>
         </div>
       )}
 
@@ -82,7 +85,7 @@ export default function Events() {
             <div key={ev.id} className={`card p-4 flex gap-4 ${isPast ? 'opacity-60' : ''}`}>
               <div className="flex-shrink-0 w-14 h-14 bg-primary-50 rounded-xl flex flex-col items-center justify-center">
                 <span className="text-primary font-bold text-lg leading-none">{d.getDate()}</span>
-                <span className="text-primary-400 text-xs">{d.toLocaleDateString('es-MX', { month: 'short' })}</span>
+                <span className="text-primary-400 text-xs">{d.toLocaleDateString(locale, { month: 'short' })}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
@@ -91,9 +94,9 @@ export default function Events() {
                 </div>
                 {ev.description && <p className="text-sm text-gray-500 mt-0.5">{ev.description}</p>}
                 <div className="flex gap-3 mt-1 text-xs text-gray-400">
-                  <span>{d.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}</span>
+                  <span>{d.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</span>
                   {ev.location && <span>📍 {ev.location}</span>}
-                  <span>Por {ev.creator_name}</span>
+                  <span>{t('events.by')} {ev.creator_name}</span>
                 </div>
               </div>
             </div>

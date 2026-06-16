@@ -2,14 +2,15 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import api from '../api'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import { Avatar } from '../components/Layout'
 import PostCard from '../components/PostCard'
 import toast from 'react-hot-toast'
-const ROLES = { student: 'Alumno', teacher: 'Maestro', parent: 'Padre de familia', moderator: 'Moderador', superuser: 'Superusuario' }
 
 export default function Profile() {
   const { id } = useParams()
   const { user, setUser } = useAuth()
+  const { t, lang, changeLang } = useLanguage()
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
   const [posts, setPosts] = useState([])
@@ -18,6 +19,14 @@ export default function Profile() {
   const [saving, setSaving] = useState(false)
   const fileRef = useRef()
   const isMe = parseInt(id) === user.id
+
+  const ROLES = {
+    student: t('role.student'),
+    teacher: t('role.teacher'),
+    parent: t('role.parent'),
+    moderator: t('role.moderator'),
+    superuser: t('role.superuser'),
+  }
 
   useEffect(() => {
     api.get(`/users/${id}`).then(r => { setProfile(r.data); setForm({ full_name: r.data.full_name, bio: r.data.bio || '' }) })
@@ -35,8 +44,8 @@ export default function Profile() {
       setProfile(p => ({ ...p, ...data }))
       setUser(u => ({ ...u, ...data }))
       setEditing(false)
-      toast.success('Perfil actualizado')
-    } catch { toast.error('Error al guardar') }
+      toast.success(t('profile.updated'))
+    } catch { toast.error(t('profile.updateError')) }
     finally { setSaving(false) }
   }
 
@@ -48,7 +57,7 @@ export default function Profile() {
     const { data } = await api.patch('/users/me', fd)
     setProfile(p => ({ ...p, avatar_url: data.avatar_url }))
     setUser(u => ({ ...u, avatar_url: data.avatar_url }))
-    toast.success('Foto actualizada')
+    toast.success(t('profile.photoUpdated'))
   }
 
   if (!profile) return <div className="text-center py-12"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" /></div>
@@ -76,10 +85,10 @@ export default function Profile() {
                 <p className="text-sm text-gray-400">@{profile.username}</p>
               </div>
               {isMe && !editing && (
-                <button onClick={() => setEditing(true)} className="btn-secondary text-sm">Editar</button>
+                <button onClick={() => setEditing(true)} className="btn-secondary text-sm">{t('profile.edit')}</button>
               )}
               {!isMe && (
-                <button onClick={() => navigate(`/messages/${profile.id}`)} className="btn-primary text-sm">Mensaje</button>
+                <button onClick={() => navigate(`/messages/${profile.id}`)} className="btn-primary text-sm">{t('profile.message')}</button>
               )}
             </div>
             <div className="flex gap-2 mt-2">
@@ -93,24 +102,45 @@ export default function Profile() {
         {editing && (
           <form onSubmit={save} className="mt-4 space-y-3 border-t border-gray-100 pt-4">
             <div>
-              <label className="label">Nombre completo</label>
+              <label className="label">{t('auth.fullName')}</label>
               <input className="input" value={form.full_name} onChange={e => setForm(f => ({ ...f, full_name: e.target.value }))} />
             </div>
             <div>
-              <label className="label">Biografía</label>
-              <textarea className="input" rows={3} placeholder="Cuéntanos algo sobre ti..." value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} />
+              <label className="label">{t('profile.bio')}</label>
+              <textarea className="input" rows={3} placeholder={t('profile.bioPlaceholder')} value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} />
             </div>
             <div className="flex gap-2 justify-end">
-              <button type="button" onClick={() => setEditing(false)} className="btn-secondary text-sm">Cancelar</button>
-              <button type="submit" className="btn-primary text-sm" disabled={saving}>{saving ? 'Guardando...' : 'Guardar'}</button>
+              <button type="button" onClick={() => setEditing(false)} className="btn-secondary text-sm">{t('profile.cancel')}</button>
+              <button type="submit" className="btn-primary text-sm" disabled={saving}>{saving ? t('profile.saving') : t('profile.save')}</button>
             </div>
           </form>
         )}
+
+        {/* Selector de idioma — visible solo en el propio perfil */}
+        {isMe && (
+          <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
+            <span className="text-sm text-gray-500">{t('profile.language')}</span>
+            <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+              <button
+                onClick={() => changeLang('es')}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${lang === 'es' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                {t('profile.langEs')}
+              </button>
+              <button
+                onClick={() => changeLang('en')}
+                className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${lang === 'en' ? 'bg-white text-primary shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                {t('profile.langEn')}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="text-sm font-medium text-gray-400 px-1">Publicaciones</div>
+      <div className="text-sm font-medium text-gray-400 px-1">{t('profile.posts')}</div>
       {posts.length === 0 && (
-        <div className="card p-8 text-center text-gray-400 text-sm">Sin publicaciones aún</div>
+        <div className="card p-8 text-center text-gray-400 text-sm">{t('profile.noPosts')}</div>
       )}
       {posts.map(p => <PostCard key={p.id} post={p} onDelete={pid => setPosts(ps => ps.filter(x => x.id !== pid))} />)}
     </div>

@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import toast from 'react-hot-toast'
 
 export default function Login() {
   const [form, setForm] = useState({ email: '', password: '' })
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
+  const { t, lang, changeLang } = useLanguage()
   const navigate = useNavigate()
 
   const submit = async (e) => {
@@ -16,7 +18,7 @@ export default function Login() {
       await login(form.email, form.password)
       navigate('/')
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Error al iniciar sesión')
+      toast.error(err.response?.data?.error || t('auth.loginError'))
     } finally {
       setLoading(false)
     }
@@ -34,32 +36,40 @@ export default function Login() {
         </div>
 
         <div className="card p-8">
-          <h2 className="text-xl font-bold text-gray-800 mb-6">Iniciar sesión</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-xl font-bold text-gray-800">{t('auth.login')}</h2>
+            <button
+              onClick={() => changeLang(lang === 'es' ? 'en' : 'es')}
+              className="text-xs text-gray-400 hover:text-primary border border-gray-200 rounded-lg px-2 py-1"
+            >
+              {lang === 'es' ? 'EN' : 'ES'}
+            </button>
+          </div>
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <label className="label">Correo electrónico</label>
+              <label className="label">{t('auth.email')}</label>
               <input type="email" className="input" required
                 value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
                 placeholder="tu@correo.com" />
             </div>
             <div>
-              <label className="label">Contraseña</label>
+              <label className="label">{t('auth.password')}</label>
               <input type="password" className="input" required
                 value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
                 placeholder="••••••••" />
             </div>
             <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? 'Entrando...' : 'Entrar'}
+              {loading ? t('auth.loggingIn') : t('auth.loginBtn')}
             </button>
           </form>
           <p className="text-center text-sm text-gray-500 mt-4">
-            ¿No tienes cuenta?{' '}
-            <Link to="/register" className="text-primary font-medium hover:underline">Regístrate</Link>
+            {t('auth.noAccount')}{' '}
+            <Link to="/register" className="text-primary font-medium hover:underline">{t('auth.register')}</Link>
           </p>
         </div>
 
         <div className="mt-4 p-3 bg-primary-50 rounded-lg border border-primary-100 text-xs text-primary-700 text-center">
-          <strong>Primer acceso:</strong> admin@cecum.edu.mx / Admin123!
+          <strong>{t('auth.firstAccess')}:</strong> admin@cecum.edu.mx / Admin123!
         </div>
       </div>
     </div>

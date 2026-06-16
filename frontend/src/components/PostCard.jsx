@@ -1,14 +1,16 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { es, enUS } from 'date-fns/locale'
 import { Avatar } from './Layout'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import api, { getApiBase } from '../api'
 import toast from 'react-hot-toast'
 
 export default function PostCard({ post, onDelete }) {
   const { user } = useAuth()
+  const { t, lang } = useLanguage()
   const navigate = useNavigate()
   const [liked, setLiked] = useState(post.liked)
   const [likesCount, setLikesCount] = useState(parseInt(post.likes_count))
@@ -16,6 +18,8 @@ export default function PostCard({ post, onDelete }) {
   const [comments, setComments] = useState([])
   const [commentText, setCommentText] = useState('')
   const [loadingComments, setLoadingComments] = useState(false)
+
+  const dateLocale = lang === 'en' ? enUS : es
 
   const toggleLike = async () => {
     const prev = liked
@@ -48,23 +52,24 @@ export default function PostCard({ post, onDelete }) {
   }
 
   const handleDelete = async () => {
-    if (!confirm('¿Eliminar esta publicación?')) return
+    if (!confirm(t('post.confirmDelete'))) return
     await api.delete(`/posts/${post.id}`)
-    toast.success('Publicación eliminada')
+    toast.success(t('post.deleted'))
     onDelete?.(post.id)
   }
 
   const canDelete = user.id === post.user_id || ['moderator','superuser'].includes(user.role)
+
+  const imgSrc = (url) => url?.startsWith('http') ? url : `${getApiBase()}${url}`
 
   return (
     <div className="card p-4 space-y-3">
       <div className="flex items-start justify-between">
         <button onClick={() => navigate(`/profile/${post.user_id}`)} className="flex items-center gap-3 hover:opacity-80">
           <Avatar user={{ full_name: post.full_name, avatar_url: post.avatar_url }} size="md" />
-
           <div className="text-left">
             <p className="font-semibold text-sm text-gray-900">{post.full_name}</p>
-            <p className="text-xs text-gray-400">@{post.username} · {formatDistanceToNow(new Date(post.created_at), { locale: es, addSuffix: true })}</p>
+            <p className="text-xs text-gray-400">@{post.username} · {formatDistanceToNow(new Date(post.created_at), { locale: dateLocale, addSuffix: true })}</p>
           </div>
         </button>
         {canDelete && (
@@ -78,7 +83,7 @@ export default function PostCard({ post, onDelete }) {
 
       {post.image_url && (
         <img
-          src={post.image_url.startsWith('http') ? post.image_url : `${getApiBase()}${post.image_url}`}
+          src={imgSrc(post.image_url)}
           alt=""
           className="rounded-lg w-full object-cover max-h-80"
         />
@@ -90,14 +95,14 @@ export default function PostCard({ post, onDelete }) {
           {likesCount}
         </button>
         <button onClick={loadComments} className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-primary transition-colors">
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 12.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" /></svg>
           {post.comments_count}
         </button>
       </div>
 
       {showComments && (
         <div className="space-y-3 pt-2 border-t border-gray-100">
-          {loadingComments && <p className="text-xs text-gray-400">Cargando...</p>}
+          {loadingComments && <p className="text-xs text-gray-400">{t('post.loading')}</p>}
           {comments.map(c => (
             <div key={c.id} className="flex gap-2">
               <Avatar user={{ full_name: c.full_name, avatar_url: c.avatar_url }} size="sm" />
@@ -109,8 +114,8 @@ export default function PostCard({ post, onDelete }) {
           ))}
           <form onSubmit={submitComment} className="flex gap-2">
             <Avatar user={user} size="sm" />
-            <input className="input flex-1 text-sm" value={commentText} onChange={e => setCommentText(e.target.value)} placeholder="Escribe un comentario..." />
-            <button type="submit" className="btn-primary text-sm px-3 py-1.5">Enviar</button>
+            <input className="input flex-1 text-sm" value={commentText} onChange={e => setCommentText(e.target.value)} placeholder={t('post.comment')} />
+            <button type="submit" className="btn-primary text-sm px-3 py-1.5">{t('post.send')}</button>
           </form>
         </div>
       )}

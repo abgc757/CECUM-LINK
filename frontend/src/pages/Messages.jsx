@@ -3,12 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { io } from 'socket.io-client'
 import api, { getSocketUrl } from '../api'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import { Avatar } from '../components/Layout'
 import { formatDistanceToNow } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { es, enUS } from 'date-fns/locale'
 
 export default function Messages() {
   const { user } = useAuth()
+  const { t, lang } = useLanguage()
   const { userId } = useParams()
   const navigate = useNavigate()
   const [conversations, setConversations] = useState([])
@@ -97,22 +99,22 @@ export default function Messages() {
         ${mobileView === 'chat' ? 'hidden md:flex' : 'flex'}
       `}>
         <div className="p-3 border-b border-gray-100 space-y-1">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-1">Nuevo mensaje</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-1">{t('messages.newMessage')}</p>
           <div className="relative">
             <svg className="w-4 h-4 absolute left-2.5 top-2.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
               className="input pl-8 text-sm"
-              placeholder="Buscar usuario..."
+              placeholder={t('messages.search')}
               value={search}
               onChange={e => doSearch(e.target.value)}
             />
           </div>
           {search.trim() && (
             <div className="bg-white border border-gray-100 rounded-lg overflow-hidden shadow-sm">
-              {searching && <div className="p-3 text-center text-xs text-gray-400">Buscando...</div>}
-              {!searching && searchResults.length === 0 && <div className="p-3 text-center text-xs text-gray-400">Sin resultados</div>}
+              {searching && <div className="p-3 text-center text-xs text-gray-400">{t('messages.searching')}</div>}
+              {!searching && searchResults.length === 0 && <div className="p-3 text-center text-xs text-gray-400">{t('messages.noResults')}</div>}
               {searchResults.map(u => (
                 <button key={u.id} onClick={() => openConversation(u)}
                   className="w-full flex items-center gap-2 p-2.5 hover:bg-primary-50 text-left transition-colors">
@@ -128,10 +130,10 @@ export default function Messages() {
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 pt-3 pb-1">Mensajes recientes</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide px-4 pt-3 pb-1">{t('messages.recent')}</p>
           {conversations.length === 0 && (
             <p className="text-center text-xs text-gray-400 p-6">
-              Usa el buscador para enviar tu primer mensaje
+              {t('messages.empty')}
             </p>
           )}
           {conversations.map(c => (
@@ -176,7 +178,7 @@ export default function Messages() {
             <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
               {messages.length === 0 && (
                 <div className="text-center text-gray-400 text-sm py-8">
-                  Inicia la conversación con {activeUser.full_name}
+                  {t('messages.startConversation')} {activeUser.full_name}
                 </div>
               )}
               {messages.map((m, i) => {
@@ -186,7 +188,7 @@ export default function Messages() {
                     <div className={`max-w-[75%] px-4 py-2 rounded-2xl text-sm shadow-sm ${mine ? 'bg-primary text-white rounded-br-sm' : 'bg-white text-gray-800 rounded-bl-sm'}`}>
                       {m.content}
                       <p className={`text-xs mt-1 ${mine ? 'text-primary-200' : 'text-gray-400'}`}>
-                        {formatDistanceToNow(new Date(m.created_at), { locale: es, addSuffix: true })}
+                        {formatDistanceToNow(new Date(m.created_at), { locale: lang === 'en' ? enUS : es, addSuffix: true })}
                       </p>
                     </div>
                   </div>
@@ -198,7 +200,7 @@ export default function Messages() {
             <form onSubmit={send} className="p-3 border-t border-gray-100 flex gap-2 bg-white">
               <input
                 className="input flex-1 text-sm"
-                placeholder={`Mensaje para ${activeUser.full_name}...`}
+                placeholder={`${t('messages.placeholder')} ${activeUser.full_name}...`}
                 value={text}
                 onChange={e => setText(e.target.value)}
               />
@@ -215,7 +217,7 @@ export default function Messages() {
               <svg className="w-16 h-16 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              <p className="text-sm">Selecciona una conversación o busca un compañero</p>
+              <p className="text-sm">{t('messages.selectPrompt')}</p>
             </div>
           </div>
         )}
