@@ -35,6 +35,7 @@ router.post('/', auth, upload.single('image'), async (req, res) => {
     console.error('[posts] Error subiendo imagen:', err.message);
     return res.status(500).json({ error: 'Error al subir la imagen' });
   }
+  console.log('[posts] image_url a guardar:', image_url);
   const { rows } = await pool.query(
     `INSERT INTO posts (user_id, content, image_url, group_id) VALUES ($1,$2,$3,$4)
      RETURNING id, content, image_url, group_id, created_at`,
