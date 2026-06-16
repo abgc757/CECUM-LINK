@@ -77,7 +77,7 @@ export default function PostCard({ post, onDelete }) {
       <p className="text-gray-800 text-sm leading-relaxed whitespace-pre-wrap">{post.content}</p>
 
       {post.image_url && (
-        <img src={`${getApiBase()}${post.image_url}`} alt="" className="rounded-lg w-full object-cover max-h-80" />
+        <img src={post.image_url.startsWith('http') ? post.image_url : `${getApiBase()}${post.image_url}`} alt="" className="rounded-lg w-full object-cover max-h-80" />
       )}
 
       <div className="flex items-center gap-4 pt-1 border-t border-gray-100">

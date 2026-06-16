@@ -1,15 +1,7 @@
 const router = require('express').Router();
 const { pool } = require('../db/connection');
 const { auth } = require('../middleware/auth');
-const multer = require('multer');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
-
-const storage = multer.diskStorage({
-  destination: 'uploads/',
-  filename: (_, file, cb) => cb(null, uuidv4() + path.extname(file.originalname))
-});
-const upload = multer({ storage, limits: { fileSize: 10 * 1024 * 1024 } });
+const { upload, getImageUrl } = require('../upload');
 
 router.get('/', auth, async (req, res) => {
   const { group_id, page = 1 } = req.query;
@@ -36,7 +28,7 @@ router.get('/', auth, async (req, res) => {
 router.post('/', auth, upload.single('image'), async (req, res) => {
   const { content, group_id } = req.body;
   if (!content) return res.status(400).json({ error: 'Contenido requerido' });
-  const image_url = req.file ? `/uploads/${req.file.filename}` : null;
+  const image_url = getImageUrl(req.file);
   const { rows } = await pool.query(
     `INSERT INTO posts (user_id, content, image_url, group_id) VALUES ($1,$2,$3,$4)
      RETURNING id, content, image_url, group_id, created_at`,

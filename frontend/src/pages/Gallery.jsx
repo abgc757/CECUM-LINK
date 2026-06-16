@@ -58,7 +58,7 @@ export default function Gallery() {
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
         {photos.map(p => (
           <button key={p.id} onClick={() => setSelected(p)} className="aspect-square rounded-xl overflow-hidden hover:opacity-90 transition-opacity group relative">
-            <img src={`${getApiBase()}${p.image_url}`} alt={p.caption || ''} className="w-full h-full object-cover" />
+            <img src={p.image_url.startsWith('http') ? p.image_url : `${getApiBase()}${p.image_url}`} alt={p.caption || ''} className="w-full h-full object-cover" />
             {p.caption && (
               <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <p className="text-white text-xs truncate">{p.caption}</p>
@@ -71,7 +71,7 @@ export default function Gallery() {
       {selected && (
         <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
           <div className="max-w-2xl w-full bg-white rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            <img src={`${getApiBase()}${selected.image_url}`} alt="" className="w-full object-contain max-h-[60vh]" />
+            <img src={selected.image_url.startsWith('http') ? selected.image_url : `${getApiBase()}${selected.image_url}`} alt="" className="w-full object-contain max-h-[60vh]" />
             <div className="p-4 flex items-center justify-between">
               <div>
                 {selected.caption && <p className="font-medium text-gray-800">{selected.caption}</p>}

@@ -1,15 +1,7 @@
 const router = require('express').Router();
 const { pool } = require('../db/connection');
 const { auth } = require('../middleware/auth');
-const multer = require('multer');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
-
-const storage = multer.diskStorage({
-  destination: 'uploads/',
-  filename: (_, file, cb) => cb(null, uuidv4() + path.extname(file.originalname))
-});
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 } });
+const { upload, getImageUrl } = require('../upload');
 
 router.get('/search', auth, async (req, res) => {
   const { q } = req.query;
@@ -39,7 +31,7 @@ router.patch('/me', auth, upload.single('avatar'), async (req, res) => {
   let i = 1;
   if (full_name) { updates.push(`full_name=$${i++}`); params.push(full_name); }
   if (bio !== undefined) { updates.push(`bio=$${i++}`); params.push(bio); }
-  if (req.file) { updates.push(`avatar_url=$${i++}`); params.push(`/uploads/${req.file.filename}`); }
+  if (req.file) { updates.push(`avatar_url=$${i++}`); params.push(getImageUrl(req.file)); }
   if (!updates.length) return res.status(400).json({ error: 'Nada que actualizar' });
   params.push(req.user.id);
   const { rows } = await pool.query(
