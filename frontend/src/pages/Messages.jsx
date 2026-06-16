@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { io } from 'socket.io-client'
-import api, { SOCKET_URL } from '../api'
+import api, { getSocketUrl } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { Avatar } from '../components/Layout'
 import { formatDistanceToNow } from 'date-fns'
@@ -24,7 +24,7 @@ export default function Messages() {
   const socketRef = useRef()
 
   useEffect(() => {
-    socketRef.current = io(SOCKET_URL)
+    socketRef.current = io(getSocketUrl())
     socketRef.current.emit('user:online', String(user.id))
     socketRef.current.on('message:receive', (msg) => {
       setMessages(m => [...m, msg])

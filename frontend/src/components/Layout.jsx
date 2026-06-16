@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { io } from 'socket.io-client'
 import { formatDistanceToNow } from 'date-fns'
 import { es } from 'date-fns/locale'
-import api, { SOCKET_URL } from '../api'
+import api, { getSocketUrl } from '../api'
 import toast from 'react-hot-toast'
 
 const NOTIF_ICONS = {
@@ -28,7 +28,7 @@ export default function Layout() {
   useEffect(() => {
     api.get('/notifications').then(r => setNotifications(r.data)).catch(() => {})
 
-    const socket = io(SOCKET_URL, { auth: { token: localStorage.getItem('token') } })
+    const socket = io(getSocketUrl(), { auth: { token: localStorage.getItem('token') } })
     socket.emit('user:online', String(user.id))
     socket.on('notification:new', (n) => {
       setNotifications(prev => [{ ...n, created_at: n.created_at || new Date().toISOString() }, ...prev])

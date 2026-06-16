@@ -7,12 +7,22 @@ server {
     gzip on;
     gzip_types text/plain text/css application/json application/javascript text/xml application/xml image/svg+xml;
 
-    # SPA: todas las rutas apuntan a index.html
+    # Resolver externo para que nginx resuelva el upstream en cada request
+    # (no al arrancar), evitando errores "host not found" al iniciar
+    resolver 8.8.8.8 valid=30s ipv6=off;
+
     location / {
         try_files $uri $uri/ /index.html;
     }
 
-    # Cache de assets estaticos
+    # Proxy de uploads usando variable para diferir la resolucion DNS
+    location /uploads/ {
+        set $backend_upstream https://${BACKEND_URL};
+        proxy_pass $backend_upstream/uploads/;
+        proxy_set_header Host ${BACKEND_URL};
+        proxy_ssl_server_name on;
+    }
+
     location ~* \.(js|css|png|jpg|jpeg|gif|svg|ico|woff2?)$ {
         expires 30d;
         add_header Cache-Control "public, immutable";

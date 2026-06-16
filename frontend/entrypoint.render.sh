@@ -8,8 +8,9 @@ fi
 
 echo "==> Backend URL: https://${BACKEND_URL}"
 
-# Copiar nginx.conf directamente (sin envsubst — no hay variables nginx que sustituir)
-cp /etc/nginx/templates/nginx.conf.template /etc/nginx/conf.d/default.conf
+# Sustituir solo ${BACKEND_URL} — la lista explícita protege las variables nginx
+# como $uri, $host, $upstream_name, etc.
+envsubst '${BACKEND_URL}' < /etc/nginx/templates/nginx.conf.template > /etc/nginx/conf.d/default.conf
 
 # Inyectar URLs del backend para que React las lea en runtime
 cat > /usr/share/nginx/html/env-config.js <<ENVEOF
