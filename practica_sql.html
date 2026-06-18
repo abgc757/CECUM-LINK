@@ -1,0 +1,1467 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Práctica guiada SQL — CECUM Link</title>
+<style>
+  :root {
+    --primary: #4f46e5;
+    --primary-light: #eef2ff;
+    --primary-dark: #3730a3;
+    --success: #16a34a;
+    --success-light: #dcfce7;
+    --danger: #dc2626;
+    --danger-light: #fee2e2;
+    --warning: #d97706;
+    --warning-light: #fef3c7;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-400: #9ca3af;
+    --gray-500: #6b7280;
+    --gray-700: #374151;
+    --gray-900: #111827;
+    --font: 'Segoe UI', system-ui, sans-serif;
+    --mono: 'Cascadia Code', 'Fira Mono', 'Courier New', monospace;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font);
+    background: var(--gray-50);
+    color: var(--gray-900);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ── Layout ── */
+  .shell { display: flex; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: #fff;
+    border-right: 1px solid var(--gray-200);
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+
+  .sidebar-logo {
+    padding: 18px 20px 14px;
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .sidebar-logo .logo-title { font-size: 14px; font-weight: 700; color: var(--primary); }
+  .sidebar-logo .logo-sub { font-size: 12px; color: var(--gray-500); margin-top: 2px; }
+
+  .sidebar-progress { padding: 14px 20px; border-bottom: 1px solid var(--gray-200); }
+  .progress-label { font-size: 12px; color: var(--gray-500); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .progress-bar-bg { height: 6px; background: var(--gray-100); border-radius: 99px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: var(--primary); border-radius: 99px; transition: width 0.4s; }
+
+  .nav-section { padding: 14px 12px 4px; }
+  .nav-section-title { font-size: 11px; font-weight: 600; color: var(--gray-400); text-transform: uppercase; letter-spacing: 0.07em; padding: 0 8px 6px; }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--gray-700);
+    border: none;
+    background: none;
+    width: 100%;
+    text-align: left;
+    transition: background 0.15s;
+  }
+  .nav-item:hover { background: var(--gray-100); }
+  .nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+  .nav-item.done .nav-check { color: var(--success); }
+  .nav-item .nav-check { font-size: 14px; flex-shrink: 0; width: 18px; text-align: center; }
+  .nav-item .nav-num { font-size: 11px; font-weight: 700; color: var(--gray-400); flex-shrink: 0; width: 18px; text-align: center; }
+  .nav-item.active .nav-num { color: var(--primary); }
+
+  /* Main */
+  .main { flex: 1; min-width: 0; }
+
+  /* Header */
+  .page-header {
+    background: #fff;
+    border-bottom: 1px solid var(--gray-200);
+    padding: 20px 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .page-header h1 { font-size: 20px; font-weight: 700; color: var(--gray-900); }
+  .page-header .badge {
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 99px;
+    font-weight: 600;
+  }
+  .badge-module { background: var(--primary-light); color: var(--primary-dark); }
+  .badge-practice { background: var(--warning-light); color: #92400e; }
+
+  /* Content */
+  .content { padding: 32px 36px; max-width: 860px; }
+
+  /* Cards */
+  .card {
+    background: #fff;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 24px;
+  }
+  .card-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .icon { font-size: 18px; }
+
+  /* Theory blocks */
+  .concept {
+    background: var(--primary-light);
+    border-left: 4px solid var(--primary);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 14px;
+    color: #312e81;
+  }
+  .concept strong { display: block; font-size: 13px; font-weight: 700; margin-bottom: 4px; color: var(--primary-dark); }
+
+  /* SQL code display */
+  .sql-block {
+    background: #1e1e2e;
+    border-radius: var(--radius-sm);
+    padding: 16px 20px;
+    margin: 12px 0;
+    position: relative;
+  }
+  .sql-block pre {
+    font-family: var(--mono);
+    font-size: 13.5px;
+    line-height: 1.7;
+    color: #cdd6f4;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .sql-kw { color: #89b4fa; font-weight: 700; }
+  .sql-fn { color: #a6e3a1; }
+  .sql-str { color: #f9e2af; }
+  .sql-cm { color: #6c7086; font-style: italic; }
+  .sql-copy {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #313244;
+    border: none;
+    color: #a6adc8;
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  .sql-copy:hover { background: #45475a; color: #cdd6f4; }
+
+  /* Result table */
+  .result-table-wrap { overflow-x: auto; margin: 12px 0; }
+  .result-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .result-table th {
+    background: var(--gray-100);
+    padding: 8px 14px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--gray-700);
+    border-bottom: 2px solid var(--gray-200);
+    white-space: nowrap;
+  }
+  .result-table td {
+    padding: 7px 14px;
+    border-bottom: 1px solid var(--gray-100);
+    color: var(--gray-700);
+    white-space: nowrap;
+  }
+  .result-table tr:last-child td { border-bottom: none; }
+  .result-table tr:hover td { background: var(--gray-50); }
+  .result-tag { font-size: 11px; font-weight: 600; background: var(--gray-100); color: var(--gray-500); padding: 3px 7px; border-radius: 4px; }
+
+  /* Schema mini */
+  .schema-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 12px 0; }
+  .schema-table { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius-sm); overflow: hidden; }
+  .schema-table-header { background: var(--primary); color: #fff; font-size: 12px; font-weight: 700; padding: 7px 12px; display: flex; align-items: center; gap: 6px; }
+  .schema-table-body { font-size: 12px; }
+  .schema-col { padding: 5px 12px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; justify-content: space-between; }
+  .schema-col:last-child { border-bottom: none; }
+  .schema-col-name { color: var(--gray-700); }
+  .schema-col-type { color: var(--gray-400); font-family: var(--mono); font-size: 11px; }
+  .schema-pk { font-size: 10px; font-weight: 700; background: #fef9c3; color: #854d0e; padding: 1px 5px; border-radius: 3px; }
+  .schema-fk { font-size: 10px; font-weight: 700; background: #dbeafe; color: #1e40af; padding: 1px 5px; border-radius: 3px; }
+
+  /* Exercise */
+  .exercise-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .exercise-num {
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--warning-light);
+    color: #92400e;
+    padding: 3px 10px;
+    border-radius: 99px;
+  }
+  .exercise-difficulty { font-size: 11px; color: var(--gray-400); }
+  .difficulty-easy { color: var(--success); font-weight: 600; }
+  .difficulty-medium { color: var(--warning); font-weight: 600; }
+  .difficulty-hard { color: var(--danger); font-weight: 600; }
+
+  .exercise-statement {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    font-size: 14px;
+    color: var(--gray-700);
+    margin-bottom: 14px;
+    line-height: 1.6;
+  }
+  .exercise-statement strong { color: var(--gray-900); }
+
+  /* Answer area */
+  .answer-area { position: relative; }
+  .answer-textarea {
+    width: 100%;
+    background: #1e1e2e;
+    border: 2px solid transparent;
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 13px;
+    color: #cdd6f4;
+    line-height: 1.7;
+    resize: vertical;
+    min-height: 90px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .answer-textarea:focus { border-color: var(--primary); }
+  .answer-textarea.correct { border-color: var(--success); }
+  .answer-textarea.incorrect { border-color: var(--danger); }
+
+  .btn-row { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+  .btn {
+    padding: 8px 18px;
+    border-radius: var(--radius-sm);
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn:active { transform: scale(0.97); }
+  .btn-primary { background: var(--primary); color: #fff; }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-ghost { background: var(--gray-100); color: var(--gray-700); }
+  .btn-ghost:hover { background: var(--gray-200); }
+  .btn-success { background: var(--success-light); color: #15803d; }
+
+  .feedback-box {
+    margin-top: 10px;
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    display: none;
+  }
+  .feedback-box.show { display: block; }
+  .feedback-correct { background: var(--success-light); color: #14532d; border-left: 4px solid var(--success); }
+  .feedback-incorrect { background: var(--danger-light); color: #7f1d1d; border-left: 4px solid var(--danger); }
+  .feedback-box strong { display: block; margin-bottom: 4px; }
+
+  .hint-toggle { font-size: 12px; color: var(--primary); cursor: pointer; background: none; border: none; padding: 0; text-decoration: underline; }
+  .hint-box { display: none; margin-top: 8px; background: var(--primary-light); border-radius: var(--radius-sm); padding: 10px 14px; font-size: 13px; color: #312e81; }
+  .hint-box.show { display: block; }
+
+  /* Section header */
+  .section-heading {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-sub { font-size: 14px; color: var(--gray-500); margin-bottom: 20px; }
+
+  /* Info notice */
+  .notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--warning-light);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #78350f;
+    margin: 14px 0;
+  }
+  .notice .icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  /* Page sections */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Nav dots */
+  .nav-dots { display: flex; justify-content: center; gap: 8px; margin: 24px 0 0; }
+  .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gray-200); cursor: pointer; border: none; transition: background 0.2s; }
+  .nav-dot.active { background: var(--primary); }
+
+  /* Final results */
+  .results-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 20px 0; }
+  .result-card { background: var(--gray-50); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 20px; text-align: center; }
+  .result-card .num { font-size: 36px; font-weight: 700; }
+  .result-card .lbl { font-size: 12px; color: var(--gray-500); margin-top: 4px; }
+  .result-card.good .num { color: var(--success); }
+  .result-card.warn .num { color: var(--warning); }
+  .result-card.info .num { color: var(--primary); }
+
+  .exercise-result-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--gray-100); font-size: 13px; }
+  .exercise-result-row:last-child { border-bottom: none; }
+  .ex-icon { font-size: 16px; }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--gray-300); border-radius: 99px; }
+
+  @media (max-width: 768px) {
+    .sidebar { display: none; }
+    .content { padding: 20px 18px; }
+    .page-header { padding: 16px 18px; }
+    .results-grid { grid-template-columns: 1fr; }
+    .schema-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-title">📚 Práctica SQL</div>
+      <div class="logo-sub">CECUM Link · Base de datos real</div>
+    </div>
+    <div class="sidebar-progress">
+      <div class="progress-label">
+        <span>Progreso general</span>
+        <span id="progress-pct">0%</span>
+      </div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" id="progress-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="nav-section">
+      <div class="nav-section-title">Módulos</div>
+      <button class="nav-item active" data-page="intro" onclick="goPage('intro')">
+        <span class="nav-check" id="chk-intro">📖</span>
+        <span>Introducción y esquema</span>
+      </button>
+      <button class="nav-item" data-page="mod1" onclick="goPage('mod1')">
+        <span class="nav-num" id="chk-mod1">1</span>
+        <span>SELECT básico</span>
+      </button>
+      <button class="nav-item" data-page="mod2" onclick="goPage('mod2')">
+        <span class="nav-num" id="chk-mod2">2</span>
+        <span>WHERE y filtros</span>
+      </button>
+      <button class="nav-item" data-page="mod3" onclick="goPage('mod3')">
+        <span class="nav-num" id="chk-mod3">3</span>
+        <span>JOIN entre tablas</span>
+      </button>
+      <button class="nav-item" data-page="mod4" onclick="goPage('mod4')">
+        <span class="nav-num" id="chk-mod4">4</span>
+        <span>GROUP BY y agregados</span>
+      </button>
+      <button class="nav-item" data-page="mod5" onclick="goPage('mod5')">
+        <span class="nav-num" id="chk-mod5">5</span>
+        <span>Subconsultas</span>
+      </button>
+      <button class="nav-item" data-page="results" onclick="goPage('results')">
+        <span class="nav-check" id="chk-results">🏆</span>
+        <span>Resultados finales</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main">
+
+    <!-- ── Intro ── -->
+    <div id="page-intro" class="page active">
+      <div class="page-header">
+        <h1>Práctica guiada de SQL</h1>
+        <span class="badge badge-module">Introducción</span>
+      </div>
+      <div class="content">
+        <div class="section-heading">🗄️ Base de datos: CECUM Link</div>
+        <p class="section-sub">Todas las consultas de esta práctica operan sobre la base de datos real de la plataforma escolar.</p>
+
+        <div class="notice">
+          <span class="icon">💡</span>
+          <span>Las consultas de los ejercicios reflejan datos reales. Escribe tu respuesta, verifica con el botón <strong>Comprobar</strong> y avanza al siguiente módulo cuando completes todos los ejercicios.</span>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">📋</span> Tablas del sistema</div>
+          <div class="schema-grid">
+
+            <div class="schema-table">
+              <div class="schema-table-header">👤 users</div>
+              <div class="schema-table-body">
+                <div class="schema-col"><span class="schema-col-name">id</span><span class="schema-pk">PK</span></div>
+                <div class="schema-col"><span class="schema-col-name">username</span><span class="schema-col-type">VARCHAR</span></div>
+                <div class="schema-col"><span class="schema-col-name">full_name</span><span class="schema-col-type">VARCHAR</span></div>
+                <div class="schema-col"><span class="schema-col-name">email</span><span class="schema-col-type">VARCHAR</span></div>
+                <div class="schema-col"><span class="schema-col-name">role</span><span class="schema-col-type">VARCHAR</span></div>
+                <div class="schema-col"><span class="schema-col-name">grade</span><span class="schema-col-type">VARCHAR</span></div>
+                <div class="schema-col"><span class="schema-col-name">approved</span><span class="schema-col-type">BOOLEAN</span></div>
+              </div>
+            </div>
+
+            <div class="schema-table">
+              <div class="schema-table-header">📝 posts</div>
+              <div class="schema-table-body">
+                <div class="schema-col"><span class="schema-col-name">id</span><span class="schema-pk">PK</span></div>
+                <div class="schema-col"><span class="schema-col-name">user_id</span><span class="schema-fk">FK→users</span></div>
+                <div class="schema-col"><span class="schema-col-name">content</span><span class="schema-col-type">TEXT</span></div>
+                <div class="schema-col"><span class="schema-col-name">image_url</span><span class="schema-col-type">TEXT</span></div>
+                <div class="schema-col"><span class="schema-col-name">group_id</span><span class="schema-fk">FK→groups</span></div>
+                <div class="schema-col"><span class="schema-col-name">created_at</span><span class="schema-col-type">TIMESTAMP</span></div>
+              </div>
+            </div>
+
+            <div class="schema-table">
+              <div class="schema-table-header">💬 messages</div>
+              <div class="schema-table-body">
+                <div class="schema-col"><span class="schema-col-name">id</span><span class="schema-pk">PK</span></div>
+                <div class="schema-col"><span class="schema-col-name">sender_id</span><span class="schema-fk">FK→users</span></div>
+                <div class="schema-col"><span class="schema-col-name">receiver_id</span><span class="schema-fk">FK→users</span></div>
+                <div class="schema-col"><span class="schema-col-name">content</span><span class="schema-col-type">TEXT</span></div>
+                <div class="schema-col"><span class="schema-col-name">read</span><span class="schema-col-type">BOOLEAN</span></div>
+                <div class="schema-col"><span class="schema-col-name">created_at</span><span class="schema-col-type">TIMESTAMP</span></div>
+              </div>
+            </div>
+
+            <div class="schema-table">
+              <div class="schema-table-header">👥 groups</div>
+              <div class="schema-table-body">
+                <div class="schema-col"><span class="schema-col-name">id</span><span class="schema-pk">PK</span></div>
+                <div class="schema-col"><span class="schema-col-name">name</span><span class="schema-col-type">VARCHAR</span></div>
+                <div class="schema-col"><span class="schema-col-name">description</span><span class="schema-col-type">TEXT</span></div>
+                <div class="schema-col"><span class="schema-col-name">subject</span><span class="schema-col-type">VARCHAR</span></div>
+                <div class="schema-col"><span class="schema-col-name">grade</span><span class="schema-col-type">VARCHAR</span></div>
+                <div class="schema-col"><span class="schema-col-name">created_by</span><span class="schema-fk">FK→users</span></div>
+              </div>
+            </div>
+
+            <div class="schema-table">
+              <div class="schema-table-header">📅 events</div>
+              <div class="schema-table-body">
+                <div class="schema-col"><span class="schema-col-name">id</span><span class="schema-pk">PK</span></div>
+                <div class="schema-col"><span class="schema-col-name">title</span><span class="schema-col-type">VARCHAR</span></div>
+                <div class="schema-col"><span class="schema-col-name">event_date</span><span class="schema-col-type">TIMESTAMP</span></div>
+                <div class="schema-col"><span class="schema-col-name">location</span><span class="schema-col-type">VARCHAR</span></div>
+                <div class="schema-col"><span class="schema-col-name">group_id</span><span class="schema-fk">FK→groups</span></div>
+                <div class="schema-col"><span class="schema-col-name">created_by</span><span class="schema-fk">FK→users</span></div>
+              </div>
+            </div>
+
+            <div class="schema-table">
+              <div class="schema-table-header">📊 grades</div>
+              <div class="schema-table-body">
+                <div class="schema-col"><span class="schema-col-name">id</span><span class="schema-pk">PK</span></div>
+                <div class="schema-col"><span class="schema-col-name">student_id</span><span class="schema-fk">FK→users</span></div>
+                <div class="schema-col"><span class="schema-col-name">subject</span><span class="schema-col-type">VARCHAR</span></div>
+                <div class="schema-col"><span class="schema-col-name">grade_value</span><span class="schema-col-type">NUMERIC</span></div>
+                <div class="schema-col"><span class="schema-col-name">period</span><span class="schema-col-type">VARCHAR</span></div>
+                <div class="schema-col"><span class="schema-col-name">created_by</span><span class="schema-fk">FK→users</span></div>
+              </div>
+            </div>
+
+            <div class="schema-table">
+              <div class="schema-table-header">✅ tasks</div>
+              <div class="schema-table-body">
+                <div class="schema-col"><span class="schema-col-name">id</span><span class="schema-pk">PK</span></div>
+                <div class="schema-col"><span class="schema-col-name">title</span><span class="schema-col-type">VARCHAR</span></div>
+                <div class="schema-col"><span class="schema-col-name">due_date</span><span class="schema-col-type">TIMESTAMP</span></div>
+                <div class="schema-col"><span class="schema-col-name">group_id</span><span class="schema-fk">FK→groups</span></div>
+                <div class="schema-col"><span class="schema-col-name">created_by</span><span class="schema-fk">FK→users</span></div>
+              </div>
+            </div>
+
+            <div class="schema-table">
+              <div class="schema-table-header">📸 gallery</div>
+              <div class="schema-table-body">
+                <div class="schema-col"><span class="schema-col-name">id</span><span class="schema-pk">PK</span></div>
+                <div class="schema-col"><span class="schema-col-name">user_id</span><span class="schema-fk">FK→users</span></div>
+                <div class="schema-col"><span class="schema-col-name">group_id</span><span class="schema-fk">FK→groups</span></div>
+                <div class="schema-col"><span class="schema-col-name">image_url</span><span class="schema-col-type">TEXT</span></div>
+                <div class="schema-col"><span class="schema-col-name">caption</span><span class="schema-col-type">TEXT</span></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">🗺️</span> Estructura de la práctica</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:8px">
+            <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:14px">
+              <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:4px">Módulo 1</div>
+              <div style="font-size:13px;color:var(--gray-700)">SELECT básico — consultar columnas y limitar resultados</div>
+            </div>
+            <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:14px">
+              <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:4px">Módulo 2</div>
+              <div style="font-size:13px;color:var(--gray-700)">WHERE — filtrar registros con condiciones</div>
+            </div>
+            <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:14px">
+              <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:4px">Módulo 3</div>
+              <div style="font-size:13px;color:var(--gray-700)">JOIN — combinar datos de múltiples tablas</div>
+            </div>
+            <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:14px">
+              <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:4px">Módulo 4</div>
+              <div style="font-size:13px;color:var(--gray-700)">GROUP BY — agrupar y calcular totales</div>
+            </div>
+            <div style="background:var(--gray-50);border:1px solid var(--gray-200);border-radius:8px;padding:14px">
+              <div style="font-size:13px;font-weight:700;color:var(--primary);margin-bottom:4px">Módulo 5</div>
+              <div style="font-size:13px;color:var(--gray-700)">Subconsultas — consultas dentro de consultas</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="btn-row" style="justify-content:flex-end">
+          <button class="btn btn-primary" onclick="goPage('mod1')">Empezar práctica →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Módulo 1: SELECT ── -->
+    <div id="page-mod1" class="page">
+      <div class="page-header">
+        <h1>Módulo 1 — SELECT básico</h1>
+        <span class="badge badge-module">Teoría + Ejercicios</span>
+      </div>
+      <div class="content">
+        <div class="section-heading">📖 Conceptos</div>
+        <p class="section-sub">El comando SELECT recupera datos de una o más columnas de una tabla.</p>
+
+        <div class="concept">
+          <strong>Sintaxis base</strong>
+          SELECT columna1, columna2 FROM tabla;
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">📌</span> Ejemplo 1 — Todos los usuarios</div>
+          <div class="sql-block">
+            <button class="sql-copy" onclick="copySQL(this)">Copiar</button>
+            <pre><span class="sql-kw">SELECT</span> id, username, full_name, role
+<span class="sql-kw">FROM</span> users;</pre>
+          </div>
+          <div class="result-table-wrap">
+            <table class="result-table">
+              <thead><tr><th>id</th><th>username</th><th>full_name</th><th>role</th></tr></thead>
+              <tbody>
+                <tr><td>1</td><td>mgarcia</td><td>María García López</td><td>teacher</td></tr>
+                <tr><td>2</td><td>jperez</td><td>Juan Pérez Ruiz</td><td>student</td></tr>
+                <tr><td>3</td><td>lmartinez</td><td>Laura Martínez</td><td>student</td></tr>
+                <tr><td colspan="4" style="text-align:center;color:var(--gray-400);font-size:12px">… más filas</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">📌</span> Ejemplo 2 — Limitar resultados con LIMIT</div>
+          <div class="sql-block">
+            <button class="sql-copy" onclick="copySQL(this)">Copiar</button>
+            <pre><span class="sql-kw">SELECT</span> id, title, event_date
+<span class="sql-kw">FROM</span> events
+<span class="sql-kw">LIMIT</span> 5;</pre>
+          </div>
+          <p style="font-size:13px;color:var(--gray-500);margin-top:8px">Trae solo los primeros 5 eventos registrados.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">📌</span> Ejemplo 3 — Alias con AS</div>
+          <div class="sql-block">
+            <button class="sql-copy" onclick="copySQL(this)">Copiar</button>
+            <pre><span class="sql-kw">SELECT</span> full_name <span class="sql-kw">AS</span> <span class="sql-str">"Nombre completo"</span>,
+       email      <span class="sql-kw">AS</span> <span class="sql-str">"Correo"</span>
+<span class="sql-kw">FROM</span> users;</pre>
+          </div>
+        </div>
+
+        <div class="section-heading" style="margin-top:32px">✏️ Ejercicios</div>
+
+        <!-- Ejercicio 1.1 -->
+        <div class="card">
+          <div class="exercise-header">
+            <span class="exercise-num">Ejercicio 1.1</span>
+            <span class="exercise-difficulty difficulty-easy">● Fácil</span>
+          </div>
+          <div class="exercise-statement">
+            Escribe una consulta que muestre el <strong>username</strong> y el <strong>email</strong> de todos los usuarios registrados en la plataforma.
+          </div>
+          <div class="answer-area">
+            <textarea class="answer-textarea" id="ans-1-1" placeholder="Escribe tu consulta SQL aquí…" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="check('1-1')">Comprobar</button>
+              <button class="hint-toggle" onclick="toggleHint('hint-1-1')">¿Pista?</button>
+              <button class="btn btn-ghost" onclick="showAnswer('1-1')">Ver respuesta</button>
+            </div>
+            <div class="hint-box" id="hint-1-1">Usa SELECT con las columnas separadas por coma y FROM con el nombre de la tabla correcta.</div>
+            <div class="feedback-box" id="fb-1-1"></div>
+          </div>
+        </div>
+
+        <!-- Ejercicio 1.2 -->
+        <div class="card">
+          <div class="exercise-header">
+            <span class="exercise-num">Ejercicio 1.2</span>
+            <span class="exercise-difficulty difficulty-easy">● Fácil</span>
+          </div>
+          <div class="exercise-statement">
+            Muestra el <strong>título</strong>, la <strong>fecha del evento</strong> y la <strong>ubicación</strong> de los primeros <strong>10 eventos</strong> registrados.
+          </div>
+          <div class="answer-area">
+            <textarea class="answer-textarea" id="ans-1-2" placeholder="Escribe tu consulta SQL aquí…" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="check('1-2')">Comprobar</button>
+              <button class="hint-toggle" onclick="toggleHint('hint-1-2')">¿Pista?</button>
+              <button class="btn btn-ghost" onclick="showAnswer('1-2')">Ver respuesta</button>
+            </div>
+            <div class="hint-box" id="hint-1-2">Recuerda usar LIMIT al final de tu consulta para restringir el número de resultados.</div>
+            <div class="feedback-box" id="fb-1-2"></div>
+          </div>
+        </div>
+
+        <!-- Ejercicio 1.3 -->
+        <div class="card">
+          <div class="exercise-header">
+            <span class="exercise-num">Ejercicio 1.3</span>
+            <span class="exercise-difficulty difficulty-medium">● Medio</span>
+          </div>
+          <div class="exercise-statement">
+            Consulta el <strong>contenido</strong> y la <strong>fecha de creación</strong> de las publicaciones, usando el alias <strong>"Publicación"</strong> para content y <strong>"Fecha"</strong> para created_at.
+          </div>
+          <div class="answer-area">
+            <textarea class="answer-textarea" id="ans-1-3" placeholder="Escribe tu consulta SQL aquí…" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="check('1-3')">Comprobar</button>
+              <button class="hint-toggle" onclick="toggleHint('hint-1-3')">¿Pista?</button>
+              <button class="btn btn-ghost" onclick="showAnswer('1-3')">Ver respuesta</button>
+            </div>
+            <div class="hint-box" id="hint-1-3">Usa la palabra clave AS después de cada columna para asignarle un alias: columna AS "Alias".</div>
+            <div class="feedback-box" id="fb-1-3"></div>
+          </div>
+        </div>
+
+        <div class="btn-row" style="justify-content:flex-end;margin-top:8px">
+          <button class="btn btn-ghost" onclick="goPage('intro')">← Anterior</button>
+          <button class="btn btn-primary" onclick="goPage('mod2')">Siguiente módulo →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Módulo 2: WHERE ── -->
+    <div id="page-mod2" class="page">
+      <div class="page-header">
+        <h1>Módulo 2 — WHERE y filtros</h1>
+        <span class="badge badge-module">Teoría + Ejercicios</span>
+      </div>
+      <div class="content">
+        <div class="section-heading">📖 Conceptos</div>
+        <p class="section-sub">WHERE filtra filas según una condición. Solo las filas que cumplen la condición aparecen en el resultado.</p>
+
+        <div class="concept">
+          <strong>Operadores comunes</strong>
+          = &nbsp; != &nbsp; &lt; &nbsp; &gt; &nbsp; &lt;= &nbsp; &gt;= &nbsp; LIKE &nbsp; IN &nbsp; BETWEEN &nbsp; IS NULL &nbsp; AND &nbsp; OR &nbsp; NOT
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">📌</span> Ejemplo 1 — Filtrar por rol</div>
+          <div class="sql-block">
+            <button class="sql-copy" onclick="copySQL(this)">Copiar</button>
+            <pre><span class="sql-kw">SELECT</span> full_name, email, role
+<span class="sql-kw">FROM</span> users
+<span class="sql-kw">WHERE</span> role = <span class="sql-str">'student'</span>;</pre>
+          </div>
+          <div class="result-table-wrap">
+            <table class="result-table">
+              <thead><tr><th>full_name</th><th>email</th><th>role</th></tr></thead>
+              <tbody>
+                <tr><td>Juan Pérez Ruiz</td><td>jperez@cecum.mx</td><td>student</td></tr>
+                <tr><td>Laura Martínez</td><td>lmartinez@cecum.mx</td><td>student</td></tr>
+                <tr><td colspan="3" style="text-align:center;color:var(--gray-400);font-size:12px">…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">📌</span> Ejemplo 2 — LIKE para búsqueda parcial</div>
+          <div class="sql-block">
+            <button class="sql-copy" onclick="copySQL(this)">Copiar</button>
+            <pre><span class="sql-kw">SELECT</span> full_name, email
+<span class="sql-kw">FROM</span> users
+<span class="sql-kw">WHERE</span> email <span class="sql-kw">LIKE</span> <span class="sql-str">'%@cecum.mx'</span>;</pre>
+          </div>
+          <p style="font-size:13px;color:var(--gray-500);margin-top:8px">El <code>%</code> es un comodín que representa cualquier cantidad de caracteres.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">📌</span> Ejemplo 3 — Múltiples condiciones con AND / OR</div>
+          <div class="sql-block">
+            <button class="sql-copy" onclick="copySQL(this)">Copiar</button>
+            <pre><span class="sql-kw">SELECT</span> full_name, role, approved
+<span class="sql-kw">FROM</span> users
+<span class="sql-kw">WHERE</span> role = <span class="sql-str">'student'</span>
+  <span class="sql-kw">AND</span> approved = <span class="sql-kw">true</span>;</pre>
+          </div>
+        </div>
+
+        <div class="section-heading" style="margin-top:32px">✏️ Ejercicios</div>
+
+        <div class="card">
+          <div class="exercise-header">
+            <span class="exercise-num">Ejercicio 2.1</span>
+            <span class="exercise-difficulty difficulty-easy">● Fácil</span>
+          </div>
+          <div class="exercise-statement">
+            Obtén el <strong>nombre completo</strong> y <strong>grado</strong> de los usuarios cuyo rol sea <strong>'teacher'</strong>.
+          </div>
+          <div class="answer-area">
+            <textarea class="answer-textarea" id="ans-2-1" placeholder="Escribe tu consulta SQL aquí…" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="check('2-1')">Comprobar</button>
+              <button class="hint-toggle" onclick="toggleHint('hint-2-1')">¿Pista?</button>
+              <button class="btn btn-ghost" onclick="showAnswer('2-1')">Ver respuesta</button>
+            </div>
+            <div class="hint-box" id="hint-2-1">Agrega una cláusula WHERE después del FROM con la condición role = 'teacher'.</div>
+            <div class="feedback-box" id="fb-2-1"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="exercise-header">
+            <span class="exercise-num">Ejercicio 2.2</span>
+            <span class="exercise-difficulty difficulty-easy">● Fácil</span>
+          </div>
+          <div class="exercise-statement">
+            Muestra los mensajes (<strong>id</strong>, <strong>content</strong>) que aún <strong>no han sido leídos</strong> (read = false).
+          </div>
+          <div class="answer-area">
+            <textarea class="answer-textarea" id="ans-2-2" placeholder="Escribe tu consulta SQL aquí…" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="check('2-2')">Comprobar</button>
+              <button class="hint-toggle" onclick="toggleHint('hint-2-2')">¿Pista?</button>
+              <button class="btn btn-ghost" onclick="showAnswer('2-2')">Ver respuesta</button>
+            </div>
+            <div class="hint-box" id="hint-2-2">La columna read es de tipo BOOLEAN. Filtra con WHERE read = false.</div>
+            <div class="feedback-box" id="fb-2-2"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="exercise-header">
+            <span class="exercise-num">Ejercicio 2.3</span>
+            <span class="exercise-difficulty difficulty-medium">● Medio</span>
+          </div>
+          <div class="exercise-statement">
+            Consulta los <strong>usuarios aprobados</strong> cuyo <strong>username contenga la letra 'a'</strong> (en cualquier posición). Muestra username, full_name y approved.
+          </div>
+          <div class="answer-area">
+            <textarea class="answer-textarea" id="ans-2-3" placeholder="Escribe tu consulta SQL aquí…" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="check('2-3')">Comprobar</button>
+              <button class="hint-toggle" onclick="toggleHint('hint-2-3')">¿Pista?</button>
+              <button class="btn btn-ghost" onclick="showAnswer('2-3')">Ver respuesta</button>
+            </div>
+            <div class="hint-box" id="hint-2-3">Combina dos condiciones con AND: una para approved = true y otra con LIKE '%a%' para el username.</div>
+            <div class="feedback-box" id="fb-2-3"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="exercise-header">
+            <span class="exercise-num">Ejercicio 2.4</span>
+            <span class="exercise-difficulty difficulty-hard">● Difícil</span>
+          </div>
+          <div class="exercise-statement">
+            Obtén las calificaciones (<strong>subject</strong>, <strong>grade_value</strong>) cuyo valor esté <strong>entre 8.0 y 10.0</strong>, ordenadas de <strong>mayor a menor</strong>.
+          </div>
+          <div class="answer-area">
+            <textarea class="answer-textarea" id="ans-2-4" placeholder="Escribe tu consulta SQL aquí…" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="check('2-4')">Comprobar</button>
+              <button class="hint-toggle" onclick="toggleHint('hint-2-4')">¿Pista?</button>
+              <button class="btn btn-ghost" onclick="showAnswer('2-4')">Ver respuesta</button>
+            </div>
+            <div class="hint-box" id="hint-2-4">Usa BETWEEN 8.0 AND 10.0 para el rango y ORDER BY grade_value DESC para ordenar de mayor a menor.</div>
+            <div class="feedback-box" id="fb-2-4"></div>
+          </div>
+        </div>
+
+        <div class="btn-row" style="justify-content:flex-end;margin-top:8px">
+          <button class="btn btn-ghost" onclick="goPage('mod1')">← Anterior</button>
+          <button class="btn btn-primary" onclick="goPage('mod3')">Siguiente módulo →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Módulo 3: JOIN ── -->
+    <div id="page-mod3" class="page">
+      <div class="page-header">
+        <h1>Módulo 3 — JOIN entre tablas</h1>
+        <span class="badge badge-module">Teoría + Ejercicios</span>
+      </div>
+      <div class="content">
+        <div class="section-heading">📖 Conceptos</div>
+        <p class="section-sub">JOIN combina filas de dos tablas usando una columna en común (clave foránea → clave primaria).</p>
+
+        <div class="concept">
+          <strong>Tipos de JOIN más usados</strong>
+          INNER JOIN — solo filas que coinciden en ambas tablas.<br>
+          LEFT JOIN — todas las filas de la tabla izquierda; NULL donde no hay coincidencia a la derecha.
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">📌</span> Ejemplo 1 — Publicaciones con nombre de autor</div>
+          <div class="sql-block">
+            <button class="sql-copy" onclick="copySQL(this)">Copiar</button>
+            <pre><span class="sql-kw">SELECT</span> p.id, p.content, u.full_name <span class="sql-kw">AS</span> autor
+<span class="sql-kw">FROM</span> posts p
+<span class="sql-kw">INNER JOIN</span> users u <span class="sql-kw">ON</span> u.id = p.user_id;</pre>
+          </div>
+          <div class="result-table-wrap">
+            <table class="result-table">
+              <thead><tr><th>id</th><th>content</th><th>autor</th></tr></thead>
+              <tbody>
+                <tr><td>1</td><td>Bienvenidos al nuevo ciclo…</td><td>María García López</td></tr>
+                <tr><td>2</td><td>Recordatorio: entrega el viernes…</td><td>Juan Pérez Ruiz</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">📌</span> Ejemplo 2 — Mensajes con remitente y destinatario</div>
+          <div class="sql-block">
+            <button class="sql-copy" onclick="copySQL(this)">Copiar</button>
+            <pre><span class="sql-kw">SELECT</span> m.id,
+       m.content,
+       s.full_name  <span class="sql-kw">AS</span> remitente,
+       r.full_name  <span class="sql-kw">AS</span> destinatario
+<span class="sql-kw">FROM</span> messages m
+<span class="sql-kw">JOIN</span> users s <span class="sql-kw">ON</span> s.id = m.sender_id
+<span class="sql-kw">JOIN</span> users r <span class="sql-kw">ON</span> r.id = m.receiver_id;</pre>
+          </div>
+          <p style="font-size:13px;color:var(--gray-500);margin-top:8px">Se hace <strong>doble JOIN</strong> a la misma tabla users con alias distintos (s = sender, r = receiver).</p>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">📌</span> Ejemplo 3 — LEFT JOIN (grupos sin eventos)</div>
+          <div class="sql-block">
+            <button class="sql-copy" onclick="copySQL(this)">Copiar</button>
+            <pre><span class="sql-kw">SELECT</span> g.name, e.title <span class="sql-kw">AS</span> evento
+<span class="sql-kw">FROM</span> groups g
+<span class="sql-kw">LEFT JOIN</span> events e <span class="sql-kw">ON</span> e.group_id = g.id;</pre>
+          </div>
+        </div>
+
+        <div class="section-heading" style="margin-top:32px">✏️ Ejercicios</div>
+
+        <div class="card">
+          <div class="exercise-header">
+            <span class="exercise-num">Ejercicio 3.1</span>
+            <span class="exercise-difficulty difficulty-easy">● Fácil</span>
+          </div>
+          <div class="exercise-statement">
+            Muestra el <strong>título de cada tarea</strong> junto con el <strong>nombre del grupo</strong> al que pertenece. Columnas: título de la tarea y nombre del grupo.
+          </div>
+          <div class="answer-area">
+            <textarea class="answer-textarea" id="ans-3-1" placeholder="Escribe tu consulta SQL aquí…" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="check('3-1')">Comprobar</button>
+              <button class="hint-toggle" onclick="toggleHint('hint-3-1')">¿Pista?</button>
+              <button class="btn btn-ghost" onclick="showAnswer('3-1')">Ver respuesta</button>
+            </div>
+            <div class="hint-box" id="hint-3-1">Relaciona tasks con groups a través de tasks.group_id = groups.id usando JOIN.</div>
+            <div class="feedback-box" id="fb-3-1"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="exercise-header">
+            <span class="exercise-num">Ejercicio 3.2</span>
+            <span class="exercise-difficulty difficulty-medium">● Medio</span>
+          </div>
+          <div class="exercise-statement">
+            Consulta las <strong>calificaciones</strong> mostrando el <strong>nombre del alumno</strong>, la <strong>materia</strong> y el <strong>valor de la calificación</strong>. Incluye también el <strong>nombre del maestro</strong> que registró la calificación.
+          </div>
+          <div class="answer-area">
+            <textarea class="answer-textarea" id="ans-3-2" placeholder="Escribe tu consulta SQL aquí…" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="check('3-2')">Comprobar</button>
+              <button class="hint-toggle" onclick="toggleHint('hint-3-2')">¿Pista?</button>
+              <button class="btn btn-ghost" onclick="showAnswer('3-2')">Ver respuesta</button>
+            </div>
+            <div class="hint-box" id="hint-3-2">Necesitas dos JOIN a users: uno para el alumno (student_id) y otro para el maestro (created_by). Usa alias distintos.</div>
+            <div class="feedback-box" id="fb-3-2"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="exercise-header">
+            <span class="exercise-num">Ejercicio 3.3</span>
+            <span class="exercise-difficulty difficulty-medium">● Medio</span>
+          </div>
+          <div class="exercise-statement">
+            Lista las <strong>fotos de la galería</strong> mostrando el <strong>caption</strong>, el <strong>nombre del usuario</strong> que la subió y el <strong>nombre del grupo</strong> (si tiene). Los grupos sin foto también deben aparecer → usa LEFT JOIN.
+          </div>
+          <div class="answer-area">
+            <textarea class="answer-textarea" id="ans-3-3" placeholder="Escribe tu consulta SQL aquí…" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="check('3-3')">Comprobar</button>
+              <button class="hint-toggle" onclick="toggleHint('hint-3-3')">¿Pista?</button>
+              <button class="btn btn-ghost" onclick="showAnswer('3-3')">Ver respuesta</button>
+            </div>
+            <div class="hint-box" id="hint-3-3">Usa INNER JOIN para users (siempre existe) y LEFT JOIN para groups (puede ser NULL si la foto no pertenece a grupo).</div>
+            <div class="feedback-box" id="fb-3-3"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="exercise-header">
+            <span class="exercise-num">Ejercicio 3.4</span>
+            <span class="exercise-difficulty difficulty-hard">● Difícil</span>
+          </div>
+          <div class="exercise-statement">
+            Muestra los <strong>mensajes no leídos</strong> con el <strong>nombre del remitente</strong> y el <strong>nombre del destinatario</strong>. Ordena por <strong>fecha de creación descendente</strong>.
+          </div>
+          <div class="answer-area">
+            <textarea class="answer-textarea" id="ans-3-4" placeholder="Escribe tu consulta SQL aquí…" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="check('3-4')">Comprobar</button>
+              <button class="hint-toggle" onclick="toggleHint('hint-3-4')">¿Pista?</button>
+              <button class="btn btn-ghost" onclick="showAnswer('3-4')">Ver respuesta</button>
+            </div>
+            <div class="hint-box" id="hint-3-4">Doble JOIN a users con alias s y r. Agrega WHERE m.read = false y ORDER BY m.created_at DESC.</div>
+            <div class="feedback-box" id="fb-3-4"></div>
+          </div>
+        </div>
+
+        <div class="btn-row" style="justify-content:flex-end;margin-top:8px">
+          <button class="btn btn-ghost" onclick="goPage('mod2')">← Anterior</button>
+          <button class="btn btn-primary" onclick="goPage('mod4')">Siguiente módulo →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Módulo 4: GROUP BY ── -->
+    <div id="page-mod4" class="page">
+      <div class="page-header">
+        <h1>Módulo 4 — GROUP BY y funciones de agregación</h1>
+        <span class="badge badge-module">Teoría + Ejercicios</span>
+      </div>
+      <div class="content">
+        <div class="section-heading">📖 Conceptos</div>
+        <p class="section-sub">GROUP BY agrupa filas con el mismo valor en una columna y permite calcular totales por grupo.</p>
+
+        <div class="concept">
+          <strong>Funciones de agregación</strong>
+          COUNT(*) — cuenta filas &nbsp;|&nbsp; SUM(col) — suma &nbsp;|&nbsp; AVG(col) — promedio &nbsp;|&nbsp; MAX(col) — máximo &nbsp;|&nbsp; MIN(col) — mínimo
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">📌</span> Ejemplo 1 — Cantidad de usuarios por rol</div>
+          <div class="sql-block">
+            <button class="sql-copy" onclick="copySQL(this)">Copiar</button>
+            <pre><span class="sql-kw">SELECT</span> role,
+       <span class="sql-fn">COUNT</span>(*) <span class="sql-kw">AS</span> total
+<span class="sql-kw">FROM</span> users
+<span class="sql-kw">GROUP BY</span> role
+<span class="sql-kw">ORDER BY</span> total <span class="sql-kw">DESC</span>;</pre>
+          </div>
+          <div class="result-table-wrap">
+            <table class="result-table">
+              <thead><tr><th>role</th><th>total</th></tr></thead>
+              <tbody>
+                <tr><td>student</td><td>142</td></tr>
+                <tr><td>parent</td><td>38</td></tr>
+                <tr><td>teacher</td><td>12</td></tr>
+                <tr><td>moderator</td><td>3</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">📌</span> Ejemplo 2 — HAVING (filtro sobre el grupo)</div>
+          <div class="sql-block">
+            <button class="sql-copy" onclick="copySQL(this)">Copiar</button>
+            <pre><span class="sql-kw">SELECT</span> subject,
+       <span class="sql-fn">AVG</span>(grade_value) <span class="sql-kw">AS</span> promedio
+<span class="sql-kw">FROM</span> grades
+<span class="sql-kw">GROUP BY</span> subject
+<span class="sql-kw">HAVING</span> <span class="sql-fn">AVG</span>(grade_value) >= 7.0
+<span class="sql-kw">ORDER BY</span> promedio <span class="sql-kw">DESC</span>;</pre>
+          </div>
+          <p style="font-size:13px;color:var(--gray-500);margin-top:8px"><strong>HAVING</strong> filtra grupos (se aplica después de GROUP BY). <strong>WHERE</strong> filtra filas (antes de agrupar).</p>
+        </div>
+
+        <div class="section-heading" style="margin-top:32px">✏️ Ejercicios</div>
+
+        <div class="card">
+          <div class="exercise-header">
+            <span class="exercise-num">Ejercicio 4.1</span>
+            <span class="exercise-difficulty difficulty-easy">● Fácil</span>
+          </div>
+          <div class="exercise-statement">
+            Cuenta cuántos <strong>mensajes ha enviado cada usuario</strong> (por sender_id). Muestra sender_id y el total de mensajes enviados.
+          </div>
+          <div class="answer-area">
+            <textarea class="answer-textarea" id="ans-4-1" placeholder="Escribe tu consulta SQL aquí…" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="check('4-1')">Comprobar</button>
+              <button class="hint-toggle" onclick="toggleHint('hint-4-1')">¿Pista?</button>
+              <button class="btn btn-ghost" onclick="showAnswer('4-1')">Ver respuesta</button>
+            </div>
+            <div class="hint-box" id="hint-4-1">Usa GROUP BY sender_id y COUNT(*) para contar los mensajes de cada remitente.</div>
+            <div class="feedback-box" id="fb-4-1"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="exercise-header">
+            <span class="exercise-num">Ejercicio 4.2</span>
+            <span class="exercise-difficulty difficulty-medium">● Medio</span>
+          </div>
+          <div class="exercise-statement">
+            Calcula el <strong>promedio de calificaciones por materia</strong>. Muestra solo las materias cuyo promedio sea <strong>mayor a 7.5</strong>, ordenadas de mayor a menor promedio.
+          </div>
+          <div class="answer-area">
+            <textarea class="answer-textarea" id="ans-4-2" placeholder="Escribe tu consulta SQL aquí…" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="check('4-2')">Comprobar</button>
+              <button class="hint-toggle" onclick="toggleHint('hint-4-2')">¿Pista?</button>
+              <button class="btn btn-ghost" onclick="showAnswer('4-2')">Ver respuesta</button>
+            </div>
+            <div class="hint-box" id="hint-4-2">Combina GROUP BY subject con AVG(grade_value) y usa HAVING para filtrar el resultado.</div>
+            <div class="feedback-box" id="fb-4-2"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="exercise-header">
+            <span class="exercise-num">Ejercicio 4.3</span>
+            <span class="exercise-difficulty difficulty-hard">● Difícil</span>
+          </div>
+          <div class="exercise-statement">
+            Muestra el <strong>nombre de cada grupo</strong> junto con el <strong>número de tareas</strong> que tiene. Incluye también los grupos <strong>sin tareas</strong> (deben aparecer con 0). Ordena por número de tareas de mayor a menor.
+          </div>
+          <div class="answer-area">
+            <textarea class="answer-textarea" id="ans-4-3" placeholder="Escribe tu consulta SQL aquí…" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="check('4-3')">Comprobar</button>
+              <button class="hint-toggle" onclick="toggleHint('hint-4-3')">¿Pista?</button>
+              <button class="btn btn-ghost" onclick="showAnswer('4-3')">Ver respuesta</button>
+            </div>
+            <div class="hint-box" id="hint-4-3">Usa LEFT JOIN de groups a tasks para incluir grupos sin tareas. Luego agrupa por g.id y g.name, y usa COUNT(t.id) para contar tareas (COUNT de columna NULL retorna 0).</div>
+            <div class="feedback-box" id="fb-4-3"></div>
+          </div>
+        </div>
+
+        <div class="btn-row" style="justify-content:flex-end;margin-top:8px">
+          <button class="btn btn-ghost" onclick="goPage('mod3')">← Anterior</button>
+          <button class="btn btn-primary" onclick="goPage('mod5')">Siguiente módulo →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Módulo 5: Subconsultas ── -->
+    <div id="page-mod5" class="page">
+      <div class="page-header">
+        <h1>Módulo 5 — Subconsultas</h1>
+        <span class="badge badge-module">Teoría + Ejercicios</span>
+      </div>
+      <div class="content">
+        <div class="section-heading">📖 Conceptos</div>
+        <p class="section-sub">Una subconsulta es una consulta dentro de otra. Puede ir en WHERE, FROM o SELECT.</p>
+
+        <div class="concept">
+          <strong>¿Cuándo usar subconsultas?</strong>
+          Cuando necesitas filtrar por un resultado calculado, comparar con un agregado o reutilizar un conjunto de filas calculado previamente.
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">📌</span> Ejemplo 1 — Usuarios que han publicado al menos una vez</div>
+          <div class="sql-block">
+            <button class="sql-copy" onclick="copySQL(this)">Copiar</button>
+            <pre><span class="sql-kw">SELECT</span> full_name, email
+<span class="sql-kw">FROM</span> users
+<span class="sql-kw">WHERE</span> id <span class="sql-kw">IN</span> (
+  <span class="sql-kw">SELECT</span> <span class="sql-fn">DISTINCT</span> user_id
+  <span class="sql-kw">FROM</span> posts
+);</pre>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span class="icon">📌</span> Ejemplo 2 — Alumno con la calificación más alta</div>
+          <div class="sql-block">
+            <button class="sql-copy" onclick="copySQL(this)">Copiar</button>
+            <pre><span class="sql-kw">SELECT</span> u.full_name, g.subject, g.grade_value
+<span class="sql-kw">FROM</span> grades g
+<span class="sql-kw">JOIN</span> users u <span class="sql-kw">ON</span> u.id = g.student_id
+<span class="sql-kw">WHERE</span> g.grade_value = (
+  <span class="sql-kw">SELECT</span> <span class="sql-fn">MAX</span>(grade_value) <span class="sql-kw">FROM</span> grades
+);</pre>
+          </div>
+        </div>
+
+        <div class="section-heading" style="margin-top:32px">✏️ Ejercicios</div>
+
+        <div class="card">
+          <div class="exercise-header">
+            <span class="exercise-num">Ejercicio 5.1</span>
+            <span class="exercise-difficulty difficulty-medium">● Medio</span>
+          </div>
+          <div class="exercise-statement">
+            Muestra los <strong>usuarios que nunca han enviado un mensaje</strong>. Usa una subconsulta con NOT IN sobre la tabla messages.
+          </div>
+          <div class="answer-area">
+            <textarea class="answer-textarea" id="ans-5-1" placeholder="Escribe tu consulta SQL aquí…" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="check('5-1')">Comprobar</button>
+              <button class="hint-toggle" onclick="toggleHint('hint-5-1')">¿Pista?</button>
+              <button class="btn btn-ghost" onclick="showAnswer('5-1')">Ver respuesta</button>
+            </div>
+            <div class="hint-box" id="hint-5-1">WHERE id NOT IN (SELECT DISTINCT sender_id FROM messages)</div>
+            <div class="feedback-box" id="fb-5-1"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="exercise-header">
+            <span class="exercise-num">Ejercicio 5.2</span>
+            <span class="exercise-difficulty difficulty-medium">● Medio</span>
+          </div>
+          <div class="exercise-statement">
+            Lista los <strong>grupos que tienen más tareas que el promedio</strong> de tareas por grupo. Muestra el nombre del grupo y su cantidad de tareas.
+          </div>
+          <div class="answer-area">
+            <textarea class="answer-textarea" id="ans-5-2" placeholder="Escribe tu consulta SQL aquí…" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="check('5-2')">Comprobar</button>
+              <button class="hint-toggle" onclick="toggleHint('hint-5-2')">¿Pista?</button>
+              <button class="btn btn-ghost" onclick="showAnswer('5-2')">Ver respuesta</button>
+            </div>
+            <div class="hint-box" id="hint-5-2">Agrupa groups con COUNT(tasks) y usa HAVING COUNT(...) > (SELECT AVG(cnt) FROM (SELECT COUNT(*) AS cnt FROM tasks GROUP BY group_id) sub).</div>
+            <div class="feedback-box" id="fb-5-2"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="exercise-header">
+            <span class="exercise-num">Ejercicio 5.3</span>
+            <span class="exercise-difficulty difficulty-hard">● Difícil</span>
+          </div>
+          <div class="exercise-statement">
+            Obtén el <strong>nombre del alumno</strong> y su <strong>calificación más alta</strong> de cada materia. Solo muestra alumnos cuyo promedio general sea <strong>mayor al promedio de toda la plataforma</strong>.
+          </div>
+          <div class="answer-area">
+            <textarea class="answer-textarea" id="ans-5-3" placeholder="Escribe tu consulta SQL aquí…" spellcheck="false"></textarea>
+            <div class="btn-row">
+              <button class="btn btn-primary" onclick="check('5-3')">Comprobar</button>
+              <button class="hint-toggle" onclick="toggleHint('hint-5-3')">¿Pista?</button>
+              <button class="btn btn-ghost" onclick="showAnswer('5-3')">Ver respuesta</button>
+            </div>
+            <div class="hint-box" id="hint-5-3">JOIN grades con users, GROUP BY student_id, usa MAX(grade_value) y filtra con HAVING AVG(grade_value) > (SELECT AVG(grade_value) FROM grades).</div>
+            <div class="feedback-box" id="fb-5-3"></div>
+          </div>
+        </div>
+
+        <div class="btn-row" style="justify-content:flex-end;margin-top:8px">
+          <button class="btn btn-ghost" onclick="goPage('mod4')">← Anterior</button>
+          <button class="btn btn-primary" onclick="goPage('results')">Ver resultados →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Resultados ── -->
+    <div id="page-results" class="page">
+      <div class="page-header">
+        <h1>Resultados de la práctica</h1>
+        <span class="badge badge-module">Resumen</span>
+      </div>
+      <div class="content">
+        <div class="results-grid">
+          <div class="result-card good">
+            <div class="num" id="res-correct">0</div>
+            <div class="lbl">Correctas</div>
+          </div>
+          <div class="result-card info">
+            <div class="num" id="res-total">14</div>
+            <div class="lbl">Total ejercicios</div>
+          </div>
+          <div class="result-card warn">
+            <div class="num" id="res-pct">0%</div>
+            <div class="lbl">Puntuación</div>
+          </div>
+        </div>
+
+        <div class="card" id="results-detail">
+          <div class="card-title"><span class="icon">📋</span> Detalle por ejercicio</div>
+          <div id="results-list"></div>
+        </div>
+
+        <div class="card" style="background:var(--primary-light);border-color:#c7d2fe">
+          <div class="card-title" style="color:var(--primary-dark)"><span class="icon">📚</span> Respuestas de referencia</div>
+          <p style="font-size:13px;color:#4338ca;margin-bottom:16px">Consulta la solución de cada ejercicio para comparar con tu respuesta:</p>
+          <div id="answer-reference"></div>
+        </div>
+
+        <div class="btn-row" style="justify-content:center;margin-top:16px">
+          <button class="btn btn-ghost" onclick="resetAll()">🔄 Reiniciar práctica</button>
+          <button class="btn btn-primary" onclick="goPage('mod1')">Repasar ejercicios</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const ANSWERS = {
+  '1-1': ['select username, email from users', 'select email, username from users'],
+  '1-2': ['select title, event_date, location from events limit 10'],
+  '1-3': ['select content as "publicación", created_at as "fecha" from posts','select content as "publicacion", created_at as "fecha" from posts'],
+  '2-1': ['select full_name, grade from users where role = \'teacher\''],
+  '2-2': ['select id, content from messages where read = false'],
+  '2-3': ['select username, full_name, approved from users where approved = true and username like \'%a%\'',
+          'select username, full_name, approved from users where username like \'%a%\' and approved = true'],
+  '2-4': ['select subject, grade_value from grades where grade_value between 8.0 and 10.0 order by grade_value desc'],
+  '3-1': ['select t.title, g.name from tasks t join groups g on g.id = t.group_id',
+          'select t.title, g.name from tasks t inner join groups g on g.id = t.group_id',
+          'select tasks.title, groups.name from tasks join groups on groups.id = tasks.group_id'],
+  '3-2': ['select st.full_name, g.subject, g.grade_value, tc.full_name as maestro from grades g join users st on st.id = g.student_id join users tc on tc.id = g.created_by'],
+  '3-3': ['select ga.caption, u.full_name, g.name from gallery ga join users u on u.id = ga.user_id left join groups g on g.id = ga.group_id'],
+  '3-4': ['select m.content, s.full_name as remitente, r.full_name as destinatario from messages m join users s on s.id = m.sender_id join users r on r.id = m.receiver_id where m.read = false order by m.created_at desc'],
+  '4-1': ['select sender_id, count(*) as total from messages group by sender_id'],
+  '4-2': ['select subject, avg(grade_value) as promedio from grades group by subject having avg(grade_value) > 7.5 order by promedio desc'],
+  '4-3': ['select g.name, count(t.id) as total_tareas from groups g left join tasks t on t.group_id = g.id group by g.id, g.name order by total_tareas desc'],
+  '5-1': ['select full_name, email from users where id not in (select distinct sender_id from messages)'],
+  '5-2': ['select g.name, count(t.id) as total from groups g join tasks t on t.group_id = g.id group by g.id, g.name having count(t.id) > (select avg(cnt) from (select count(*) as cnt from tasks group by group_id) sub)'],
+  '5-3': ['select u.full_name, g.subject, max(g.grade_value) as max_calif from grades g join users u on u.id = g.student_id group by g.student_id, u.full_name, g.subject having avg(g.grade_value) > (select avg(grade_value) from grades)']
+}
+
+const ANSWER_DISPLAY = {
+  '1-1': 'SELECT username, email\nFROM users;',
+  '1-2': 'SELECT title, event_date, location\nFROM events\nLIMIT 10;',
+  '1-3': 'SELECT content AS "Publicación",\n       created_at AS "Fecha"\nFROM posts;',
+  '2-1': "SELECT full_name, grade\nFROM users\nWHERE role = 'teacher';",
+  '2-2': 'SELECT id, content\nFROM messages\nWHERE read = false;',
+  '2-3': "SELECT username, full_name, approved\nFROM users\nWHERE approved = true\n  AND username LIKE '%a%';",
+  '2-4': 'SELECT subject, grade_value\nFROM grades\nWHERE grade_value BETWEEN 8.0 AND 10.0\nORDER BY grade_value DESC;',
+  '3-1': 'SELECT t.title, g.name\nFROM tasks t\nJOIN groups g ON g.id = t.group_id;',
+  '3-2': 'SELECT st.full_name, g.subject, g.grade_value,\n       tc.full_name AS maestro\nFROM grades g\nJOIN users st ON st.id = g.student_id\nJOIN users tc ON tc.id = g.created_by;',
+  '3-3': 'SELECT ga.caption, u.full_name, g.name\nFROM gallery ga\nJOIN users u ON u.id = ga.user_id\nLEFT JOIN groups g ON g.id = ga.group_id;',
+  '3-4': 'SELECT m.content,\n       s.full_name AS remitente,\n       r.full_name AS destinatario\nFROM messages m\nJOIN users s ON s.id = m.sender_id\nJOIN users r ON r.id = m.receiver_id\nWHERE m.read = false\nORDER BY m.created_at DESC;',
+  '4-1': 'SELECT sender_id, COUNT(*) AS total\nFROM messages\nGROUP BY sender_id;',
+  '4-2': 'SELECT subject, AVG(grade_value) AS promedio\nFROM grades\nGROUP BY subject\nHAVING AVG(grade_value) > 7.5\nORDER BY promedio DESC;',
+  '4-3': 'SELECT g.name, COUNT(t.id) AS total_tareas\nFROM groups g\nLEFT JOIN tasks t ON t.group_id = g.id\nGROUP BY g.id, g.name\nORDER BY total_tareas DESC;',
+  '5-1': 'SELECT full_name, email\nFROM users\nWHERE id NOT IN (\n  SELECT DISTINCT sender_id FROM messages\n);',
+  '5-2': 'SELECT g.name, COUNT(t.id) AS total\nFROM groups g\nJOIN tasks t ON t.group_id = g.id\nGROUP BY g.id, g.name\nHAVING COUNT(t.id) > (\n  SELECT AVG(cnt)\n  FROM (SELECT COUNT(*) AS cnt FROM tasks GROUP BY group_id) sub\n);',
+  '5-3': 'SELECT u.full_name, g.subject, MAX(g.grade_value) AS max_calif\nFROM grades g\nJOIN users u ON u.id = g.student_id\nGROUP BY g.student_id, u.full_name, g.subject\nHAVING AVG(g.grade_value) > (\n  SELECT AVG(grade_value) FROM grades\n);'
+}
+
+const EXERCISE_LABELS = {
+  '1-1':'1.1 SELECT columnas','1-2':'1.2 SELECT + LIMIT','1-3':'1.3 Alias AS',
+  '2-1':'2.1 WHERE rol','2-2':'2.2 WHERE booleano','2-3':'2.3 WHERE + LIKE + AND','2-4':'2.4 BETWEEN + ORDER BY',
+  '3-1':'3.1 JOIN básico','3-2':'3.2 Doble JOIN','3-3':'3.3 LEFT JOIN','3-4':'3.4 JOIN + WHERE + ORDER',
+  '4-1':'4.1 GROUP BY + COUNT','4-2':'4.2 AVG + HAVING','4-3':'4.3 LEFT JOIN + COUNT',
+  '5-1':'5.1 NOT IN','5-2':'5.2 Subconsulta en HAVING','5-3':'5.3 Subconsulta compleja'
+}
+
+const state = {}
+
+function normalize(sql) {
+  return sql.toLowerCase()
+    .replace(/\s+/g, ' ')
+    .replace(/;$/, '')
+    .replace(/"/g, "'")
+    .trim()
+}
+
+function check(id) {
+  const ta = document.getElementById('ans-' + id)
+  const fb = document.getElementById('fb-' + id)
+  const val = normalize(ta.value)
+  const accepted = ANSWERS[id].map(normalize)
+  const ok = accepted.some(a => val === a || flexible(val, a))
+  state[id] = ok
+  ta.className = 'answer-textarea ' + (ok ? 'correct' : 'incorrect')
+  fb.className = 'feedback-box show ' + (ok ? 'feedback-correct' : 'feedback-incorrect')
+  if (ok) {
+    fb.innerHTML = '<strong>✅ ¡Correcto!</strong>Tu consulta es válida y recuperaría los datos solicitados.'
+  } else {
+    fb.innerHTML = '<strong>❌ Revisa tu consulta.</strong>Verifica la estructura (SELECT … FROM … WHERE …), los nombres de columnas y tablas, y la condición solicitada.'
+  }
+  updateProgress()
+}
+
+function flexible(val, accepted) {
+  const vParts = val.replace(/\s+/g, ' ').split(' ')
+  const aParts = accepted.replace(/\s+/g, ' ').split(' ')
+  const keywords = ['select','from','where','join','on','group','by','having','order','limit','as','and','or','not','in','like','between','left','inner','distinct','count','avg','max','min','sum','desc','asc']
+  const vKw = vParts.filter(p => keywords.includes(p)).join(' ')
+  const aKw = aParts.filter(p => keywords.includes(p)).join(' ')
+  return vKw === aKw
+}
+
+function showAnswer(id) {
+  const ta = document.getElementById('ans-' + id)
+  ta.value = ANSWER_DISPLAY[id]
+  ta.className = 'answer-textarea correct'
+  const fb = document.getElementById('fb-' + id)
+  fb.className = 'feedback-box show feedback-correct'
+  fb.innerHTML = '<strong>💡 Respuesta mostrada.</strong>Analiza la estructura para entender cada cláusula.'
+  state[id] = true
+  updateProgress()
+}
+
+function toggleHint(hintId) {
+  const el = document.getElementById(hintId)
+  el.classList.toggle('show')
+}
+
+function copySQL(btn) {
+  const pre = btn.nextElementSibling
+  navigator.clipboard.writeText(pre.innerText).then(() => {
+    btn.textContent = '¡Copiado!'
+    setTimeout(() => btn.textContent = 'Copiar', 1500)
+  })
+}
+
+function goPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'))
+  document.getElementById('page-' + page).classList.add('active')
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.toggle('active', n.dataset.page === page)
+  })
+  if (page === 'results') buildResults()
+  window.scrollTo(0, 0)
+}
+
+function updateProgress() {
+  const total = Object.keys(ANSWERS).length
+  const done = Object.values(state).filter(Boolean).length
+  const pct = Math.round(done / total * 100)
+  document.getElementById('progress-fill').style.width = pct + '%'
+  document.getElementById('progress-pct').textContent = pct + '%'
+
+  const mods = {
+    mod1: ['1-1','1-2','1-3'],
+    mod2: ['2-1','2-2','2-3','2-4'],
+    mod3: ['3-1','3-2','3-3','3-4'],
+    mod4: ['4-1','4-2','4-3'],
+    mod5: ['5-1','5-2','5-3']
+  }
+  for (const [mod, ids] of Object.entries(mods)) {
+    const all = ids.every(id => state[id])
+    const el = document.getElementById('chk-' + mod)
+    if (el) el.textContent = all ? '✅' : el.textContent === '✅' ? el.dataset.num || ids[0].split('-')[0] : el.textContent
+    if (all && el) { el.textContent = '✅'; el.closest('.nav-item').classList.add('done') }
+  }
+}
+
+function buildResults() {
+  const allIds = Object.keys(ANSWERS)
+  const correct = allIds.filter(id => state[id]).length
+  const pct = Math.round(correct / allIds.length * 100)
+  document.getElementById('res-correct').textContent = correct
+  document.getElementById('res-total').textContent = allIds.length
+  document.getElementById('res-pct').textContent = pct + '%'
+
+  const list = document.getElementById('results-list')
+  list.innerHTML = allIds.map(id => {
+    const ok = state[id]
+    return `<div class="exercise-result-row">
+      <span class="ex-icon">${ok ? '✅' : '⬜'}</span>
+      <span style="flex:1;font-size:13px;color:var(--gray-700)">${EXERCISE_LABELS[id]}</span>
+      <span style="font-size:12px;color:${ok ? 'var(--success)' : 'var(--gray-400)'};font-weight:600">${ok ? 'Correcto' : 'Pendiente'}</span>
+    </div>`
+  }).join('')
+
+  const ref = document.getElementById('answer-reference')
+  ref.innerHTML = allIds.map(id => `
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--primary-dark);margin-bottom:6px">${EXERCISE_LABELS[id]}</div>
+      <div class="sql-block" style="margin:0"><pre style="font-size:12px">${ANSWER_DISPLAY[id]}</pre></div>
+    </div>
+  `).join('')
+}
+
+function resetAll() {
+  Object.keys(ANSWERS).forEach(id => {
+    delete state[id]
+    const ta = document.getElementById('ans-' + id)
+    if (ta) { ta.value = ''; ta.className = 'answer-textarea' }
+    const fb = document.getElementById('fb-' + id)
+    if (fb) { fb.className = 'feedback-box' }
+  })
+  document.querySelectorAll('.hint-box').forEach(h => h.classList.remove('show'))
+  document.getElementById('progress-fill').style.width = '0%'
+  document.getElementById('progress-pct').textContent = '0%'
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('done'))
+  const nums = { mod1:'1', mod2:'2', mod3:'3', mod4:'4', mod5:'5' }
+  for (const [mod, n] of Object.entries(nums)) {
+    const el = document.getElementById('chk-' + mod)
+    if (el) el.textContent = n
+  }
+  goPage('intro')
+}
+
+document.querySelectorAll('[data-page]').forEach(el => {
+  el.dataset.num = el.querySelector('.nav-num')?.textContent || ''
+})
+</script>
+</body>
+</html>
