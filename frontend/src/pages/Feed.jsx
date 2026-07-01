@@ -27,6 +27,7 @@ export default function Feed() {
   const [recording, setRecording] = useState(false)
   const [recordSeconds, setRecordSeconds] = useState(0)
   const [cameraStream, setCameraStream] = useState(null)
+  const [facingMode, setFacingMode] = useState('user')
 
   const fileRef = useRef()
   const feedRef = useRef()
@@ -56,6 +57,13 @@ export default function Feed() {
     return () => socket.disconnect()
   }, [user.id])
 
+  // Adjuntar stream al elemento <video> cuando cambia (resuelve el race condition del ref)
+  useEffect(() => {
+    if (!cameraStream || !videoPreviewRef.current) return
+    videoPreviewRef.current.srcObject = cameraStream
+    videoPreviewRef.current.play().catch(() => {})
+  }, [cameraStream])
+
   // Limpia cámara al cerrar el compositor
   useEffect(() => {
     if (!composerOpen) stopCamera()
@@ -69,15 +77,13 @@ export default function Feed() {
     clearInterval(timerRef.current)
   }
 
-  const startRecording = async () => {
+  const startRecording = async (mode = facingMode) => {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      setCameraStream(stream)
-      if (videoPreviewRef.current) {
-        videoPreviewRef.current.srcObject = stream
-        videoPreviewRef.current.muted = true
-        videoPreviewRef.current.play()
-      }
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: mode },
+        audio: true,
+      })
+      setCameraStream(stream)   // el useEffect de arriba conecta el stream al <video>
       chunksRef.current = []
       const mr = new MediaRecorder(stream, { mimeType: getSupportedMimeType() })
       mediaRecorderRef.current = mr
@@ -106,6 +112,25 @@ export default function Feed() {
     clearInterval(timerRef.current)
     if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current.stop()
     setRecording(false)
+  }
+
+  const switchCamera = async () => {
+    const newMode = facingMode === 'user' ? 'environment' : 'user'
+    setFacingMode(newMode)
+    // Detener grabación en curso si la hay
+    if (recording) {
+      clearInterval(timerRef.current)
+      if (mediaRecorderRef.current?.state !== 'inactive') {
+        mediaRecorderRef.current.stop()
+      }
+      chunksRef.current = []
+      setRecording(false)
+      setRecordSeconds(0)
+    }
+    // Detener stream actual y abrir nuevo con la cámara opuesta
+    cameraStream?.getTracks().forEach(t => t.stop())
+    setCameraStream(null)
+    await startRecording(newMode)
   }
 
   const getSupportedMimeType = () => {
@@ -215,22 +240,65 @@ export default function Feed() {
 
               {/* Preview / grabación de video */}
               {(cameraStream || videoBlob) && (
-                <div className="relative rounded-xl overflow-hidden bg-black" style={{ aspectRatio: '16/9' }}>
+                <div className="relative rounded-xl overflow-hidden bg-black" style={{ aspectRatio: '9/16', maxHeight: '340px' }}>
+                  {/* Vista en vivo de la cámara */}
                   {cameraStream && (
-                    <video ref={videoPreviewRef} className="w-full h-full object-cover" muted playsInline />
+                    <video
+                      ref={videoPreviewRef}
+                      className="w-full h-full object-cover"
+                      style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+                      muted
+                      playsInline
+                      autoPlay
+                    />
                   )}
+                  {/* Reproducción del video grabado */}
                   {videoBlob && !cameraStream && (
-                    <video src={URL.createObjectURL(videoBlob)} className="w-full h-full object-cover" controls />
+                    <video src={URL.createObjectURL(videoBlob)} className="w-full h-full object-cover" controls playsInline />
                   )}
+
+                  {/* HUD superior: indicador REC + temporizador */}
                   {recording && (
-                    <div className="absolute top-2 right-2 flex items-center gap-1.5 bg-black/60 rounded-full px-2 py-1">
-                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                      <span className="text-white text-xs font-mono">{MAX_VIDEO_SECONDS - recordSeconds}s</span>
+                    <div className="absolute top-3 left-0 right-0 flex items-center justify-center gap-2">
+                      <div className="flex items-center gap-1.5 bg-black/60 rounded-full px-3 py-1">
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                        <span className="text-white text-xs font-mono font-bold">REC</span>
+                        <span className="text-white/80 text-xs font-mono">{MAX_VIDEO_SECONDS - recordSeconds}s</span>
+                      </div>
                     </div>
                   )}
-                  {videoBlob && (
+
+                  {/* Barra de progreso de grabación */}
+                  {recording && (
+                    <div className="absolute bottom-0 left-0 right-0 h-1 bg-white/20">
+                      <div
+                        className="h-full bg-red-500 transition-all"
+                        style={{ width: `${(recordSeconds / MAX_VIDEO_SECONDS) * 100}%` }}
+                      />
+                    </div>
+                  )}
+
+                  {/* Botón cambio de cámara — visible durante grabación activa */}
+                  {cameraStream && (
+                    <button
+                      type="button"
+                      onClick={switchCamera}
+                      title={facingMode === 'user' ? 'Cambiar a cámara trasera' : 'Cambiar a cámara frontal'}
+                      className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 hover:bg-black/70 flex items-center justify-center transition-colors"
+                    >
+                      <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                          d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                      </svg>
+                    </button>
+                  )}
+
+                  {/* Descartar video grabado */}
+                  {videoBlob && !cameraStream && (
                     <button type="button" onClick={() => setVideoBlob(null)}
-                      className="absolute top-2 right-2 w-6 h-6 bg-black/60 text-white rounded-full text-xs flex items-center justify-center">×</button>
+                      className="absolute top-3 right-3 w-8 h-8 bg-black/60 text-white rounded-full text-sm flex items-center justify-center hover:bg-black/80">
+                      ×
+                    </button>
                   )}
                 </div>
               )}
