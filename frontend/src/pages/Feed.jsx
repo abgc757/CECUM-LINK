@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import api from '../api'
+import { io } from 'socket.io-client'
+import api, { getSocketUrl } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 import { Avatar } from '../components/Layout'
@@ -17,6 +18,9 @@ export default function Feed() {
   const [image, setImage] = useState(null)
   const [posting, setPosting] = useState(false)
   const [composerOpen, setComposerOpen] = useState(false)
+  const [newPostsBanner, setNewPostsBanner] = useState(0)
+
+  const socketRef = useRef()
 
   // Video recording state
   const [videoBlob, setVideoBlob] = useState(null)
@@ -37,7 +41,20 @@ export default function Feed() {
     setLoading(false)
   }
 
-  useEffect(() => { loadPosts() }, [])
+  useEffect(() => {
+    loadPosts()
+    const socket = io(getSocketUrl(), { auth: { token: localStorage.getItem('token') } })
+    socketRef.current = socket
+    socket.emit('user:online', String(user.id))
+    socket.on('post:new', (post) => {
+      setPosts(prev => {
+        if (prev.some(p => p.id === post.id)) return prev
+        setNewPostsBanner(n => n + 1)
+        return [post, ...prev]
+      })
+    })
+    return () => socket.disconnect()
+  }, [user.id])
 
   // Limpia cámara al cerrar el compositor
   useEffect(() => {
@@ -121,6 +138,13 @@ export default function Feed() {
       setVideoBlob(null)
       setComposerOpen(false)
       toast.success(t('feed.published'))
+      socketRef.current?.emit('post:new', {
+        ...data,
+        username: user.username,
+        full_name: user.full_name,
+        avatar_url: user.avatar_url,
+        likes_count: 0, comments_count: 0, liked: false
+      })
       feedRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
     } catch {
       toast.error(t('feed.publishError'))
@@ -256,6 +280,23 @@ export default function Feed() {
         </div>
       )}
 
+      {/* Banner de nuevas publicaciones */}
+      {newPostsBanner > 0 && (
+        <button
+          onClick={() => {
+            feedRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
+            setNewPostsBanner(0)
+          }}
+          className="absolute top-14 left-1/2 z-30 -translate-x-1/2 flex items-center gap-2 bg-primary text-white text-sm font-medium px-4 py-2 rounded-full shadow-lg hover:bg-primary-700 active:scale-95 transition-all"
+          style={{ animation: 'slideDown 0.25s ease' }}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
+          </svg>
+          {newPostsBanner === 1 ? '1 nueva publicación' : `${newPostsBanner} nuevas publicaciones`}
+        </button>
+      )}
+
       {/* Feed tipo reels */}
       {loading ? (
         <div className="flex-1 flex items-center justify-center">
@@ -281,6 +322,13 @@ export default function Feed() {
           ))}
         </div>
       )}
+
+      <style>{`
+        @keyframes slideDown {
+          from { opacity: 0; transform: translateX(-50%) translateY(-12px); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+      `}</style>
     </div>
   )
 }
