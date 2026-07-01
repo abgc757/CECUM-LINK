@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS notifications (
 );
 
 ALTER TABLE posts ADD COLUMN IF NOT EXISTS group_id INT REFERENCES groups(id) ON DELETE SET NULL;
+ALTER TABLE posts ADD COLUMN IF NOT EXISTS video_url TEXT;
 `;
 
 module.exports = schema;

@@ -316,8 +316,13 @@ function UserRow({ u, isSuperuser, currentUserId, onApprove, onChangeRole, onDel
             <option value="superuser">Superusuario</option>
           </select>
         )}
-        <button onClick={() => onApprove(u.id, !u.approved)}
-          className={`text-xs px-3 py-1.5 rounded-lg font-medium ${u.approved ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>
+        <button
+          onClick={() => !isOwnRow && onApprove(u.id, !u.approved)}
+          disabled={isOwnRow}
+          title={isOwnRow ? 'No puedes modificar tu propio acceso' : undefined}
+          className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors
+            ${isOwnRow ? 'bg-gray-50 text-gray-300 cursor-not-allowed' :
+              u.approved ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>
           {u.approved ? 'Revocar' : 'Aprobar'}
         </button>
         {isSuperuser && !isOwnRow && (

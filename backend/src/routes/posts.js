@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const { pool } = require('../db/connection');
 const { auth } = require('../middleware/auth');
-const { upload, getImageUrl } = require('../upload');
+const { upload, getImageUrl, getVideoUrl } = require('../upload');
 
 router.get('/', auth, async (req, res) => {
   const { group_id, page = 1 } = req.query;
@@ -25,21 +25,22 @@ router.get('/', auth, async (req, res) => {
   res.json(rows);
 });
 
-router.post('/', auth, upload.single('image'), async (req, res) => {
+router.post('/', auth, upload.fields([{ name: 'image', maxCount: 1 }, { name: 'video', maxCount: 1 }]), async (req, res) => {
   const { content, group_id } = req.body;
   if (!content) return res.status(400).json({ error: 'Contenido requerido' });
   let image_url = null;
+  let video_url = null;
   try {
-    image_url = await getImageUrl(req.file);
+    image_url = await getImageUrl(req.files?.image?.[0]);
+    video_url = await getVideoUrl(req.files?.video?.[0]);
   } catch (err) {
-    console.error('[posts] Error subiendo imagen:', err.message);
-    return res.status(500).json({ error: 'Error al subir la imagen' });
+    console.error('[posts] Error subiendo media:', err.message);
+    return res.status(500).json({ error: 'Error al subir el archivo' });
   }
-  console.log('[posts] image_url a guardar:', image_url);
   const { rows } = await pool.query(
-    `INSERT INTO posts (user_id, content, image_url, group_id) VALUES ($1,$2,$3,$4)
-     RETURNING id, content, image_url, group_id, created_at`,
-    [req.user.id, content, image_url, group_id || null]
+    `INSERT INTO posts (user_id, content, image_url, video_url, group_id) VALUES ($1,$2,$3,$4,$5)
+     RETURNING id, content, image_url, video_url, group_id, created_at`,
+    [req.user.id, content, image_url, video_url, group_id || null]
   );
   res.status(201).json(rows[0]);
 });

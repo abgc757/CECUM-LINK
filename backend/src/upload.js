@@ -18,25 +18,26 @@ if (useCloudinary) {
 }
 
 // Multer siempre guarda en memoria; la ruta decide dónde persistir
+const VIDEO_MIMETYPES = ['video/mp4', 'video/webm', 'video/quicktime', 'video/x-msvideo'];
+
 const upload = multer({
   storage: useCloudinary ? multer.memoryStorage() : multer.diskStorage({
     destination: 'uploads/',
     filename: (_, file, cb) => cb(null, uuidv4() + path.extname(file.originalname)),
   }),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 150 * 1024 * 1024 },
 });
 
-// Sube el buffer a Cloudinary y devuelve la URL pública
-async function uploadToCloudinary(file) {
+async function uploadToCloudinary(file, resourceType = 'image') {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
-      { folder: 'cecumlink', resource_type: 'image' },
+      { folder: 'cecumlink', resource_type: resourceType },
       (err, result) => {
         if (err) {
-          console.error('[Cloudinary] Error al subir imagen:', err);
+          console.error(`[Cloudinary] Error al subir ${resourceType}:`, err);
           return reject(err);
         }
-        console.log('[Cloudinary] Imagen subida:', result.secure_url);
+        console.log(`[Cloudinary] ${resourceType} subido:`, result.secure_url);
         resolve(result.secure_url);
       }
     );
@@ -44,11 +45,16 @@ async function uploadToCloudinary(file) {
   });
 }
 
-// Normaliza la URL: Cloudinary → URL absoluta, disco → /uploads/filename
 async function getImageUrl(file) {
   if (!file) return null;
-  if (useCloudinary) return uploadToCloudinary(file);
+  if (useCloudinary) return uploadToCloudinary(file, 'image');
   return `/uploads/${file.filename}`;
 }
 
-module.exports = { upload, getImageUrl };
+async function getVideoUrl(file) {
+  if (!file) return null;
+  if (useCloudinary) return uploadToCloudinary(file, 'video');
+  return `/uploads/${file.filename}`;
+}
+
+module.exports = { upload, getImageUrl, getVideoUrl, VIDEO_MIMETYPES };

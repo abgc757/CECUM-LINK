@@ -37,6 +37,8 @@ router.get('/users', auth, isMod, async (req, res) => {
 });
 
 router.patch('/users/:id/approve', auth, isMod, async (req, res) => {
+  if (parseInt(req.params.id) === req.user.id)
+    return res.status(403).json({ error: 'No puedes modificar tu propio acceso' });
   const { rows } = await pool.query(
     'UPDATE users SET approved=$1 WHERE id=$2 RETURNING id, username, approved',
     [req.body.approved, req.params.id]

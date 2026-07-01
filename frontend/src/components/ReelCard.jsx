@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
 import { es, enUS } from 'date-fns/locale'
@@ -8,30 +8,58 @@ import { useLanguage } from '../context/LanguageContext'
 import api, { getApiBase } from '../api'
 import toast from 'react-hot-toast'
 
+// Aplica transformaciones de Cloudinary para imagen responsiva
+function responsiveUrl(url, width = 800) {
+  if (!url || !url.includes('res.cloudinary.com')) return url
+  return url.replace('/upload/', `/upload/c_fill,w_${width},f_auto,q_auto/`)
+}
+
+function mediaSrc(url) {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  return `${getApiBase()}${url}`
+}
+
 export default function ReelCard({ post, onDelete }) {
   const { user } = useAuth()
   const { t, lang } = useLanguage()
   const navigate = useNavigate()
+
   const [liked, setLiked] = useState(post.liked)
   const [likesCount, setLikesCount] = useState(parseInt(post.likes_count))
+  const [showHeart, setShowHeart] = useState(false)
   const [showComments, setShowComments] = useState(false)
   const [comments, setComments] = useState([])
   const [commentText, setCommentText] = useState('')
   const [loadingComments, setLoadingComments] = useState(false)
 
+  const lastTapRef = useRef(0)
   const dateLocale = lang === 'en' ? enUS : es
   const canDelete = user.id === post.user_id || ['moderator', 'superuser'].includes(user.role)
-  const imgSrc = (url) => url?.startsWith('http') ? url : `${getApiBase()}${url}`
 
-  const toggleLike = async () => {
+  const imgSrc = responsiveUrl(mediaSrc(post.image_url))
+  const vidSrc = mediaSrc(post.video_url)
+
+  const doLike = useCallback(async () => {
     const prev = liked
-    setLiked(!liked)
-    setLikesCount(c => liked ? c - 1 : c + 1)
+    setLiked(l => !l)
+    setLikesCount(c => prev ? c - 1 : c + 1)
     try {
       const { data } = await api.post(`/posts/${post.id}/like`)
       setLiked(data.liked)
     } catch { setLiked(prev) }
-  }
+  }, [liked, post.id])
+
+  // Doble tap → like + animación corazón
+  const handleTap = useCallback(() => {
+    const now = Date.now()
+    if (now - lastTapRef.current < 320) {
+      if (!liked) doLike()
+      setShowHeart(true)
+      setTimeout(() => setShowHeart(false), 900)
+    }
+    lastTapRef.current = now
+  }, [liked, doLike])
 
   const loadComments = async () => {
     if (comments.length === 0) {
@@ -61,23 +89,53 @@ export default function ReelCard({ post, onDelete }) {
   return (
     <div className="relative w-full h-full flex flex-col overflow-hidden bg-gray-950">
 
-      {/* Fondo — imagen o gradiente */}
-      {post.image_url ? (
+      {/* Área táctil para doble tap */}
+      <div
+        className="absolute inset-0 z-10"
+        onClick={handleTap}
+        onDoubleClick={e => e.preventDefault()}
+        style={{ touchAction: 'pan-y' }}
+      />
+
+      {/* Fondo: video tiene prioridad sobre imagen */}
+      {vidSrc ? (
+        <video
+          src={vidSrc}
+          className="absolute inset-0 w-full h-full object-cover"
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+      ) : imgSrc ? (
         <img
-          src={imgSrc(post.image_url)}
+          src={imgSrc}
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
+          style={{ width: '100%', height: '100%' }}
         />
       ) : (
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-950" />
       )}
 
       {/* Overlay gradiente inferior */}
-      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-black/10 pointer-events-none" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-black/10 pointer-events-none" />
 
-      {/* Contenido principal — parte inferior */}
-      <div className="absolute bottom-0 left-0 right-14 p-5 space-y-3">
-        {/* Autor */}
+      {/* Animación corazón en doble tap */}
+      {showHeart && (
+        <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+          <svg
+            className="w-24 h-24 text-white drop-shadow-lg"
+            style={{ animation: 'heartPop 0.9s ease forwards' }}
+            fill="currentColor" viewBox="0 0 24 24"
+          >
+            <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+          </svg>
+        </div>
+      )}
+
+      {/* Info del post — parte inferior izquierda */}
+      <div className="absolute bottom-0 left-0 right-14 p-5 space-y-3 z-10">
         <button
           onClick={() => navigate(`/profile/${post.user_id}`)}
           className="flex items-center gap-3 hover:opacity-90 active:opacity-75 transition-opacity"
@@ -90,26 +148,31 @@ export default function ReelCard({ post, onDelete }) {
             </p>
           </div>
         </button>
-
-        {/* Contenido del post */}
         <p className="text-white text-sm leading-relaxed line-clamp-4 whitespace-pre-wrap">
           {post.content}
         </p>
+        {/* Indicador de video */}
+        {vidSrc && (
+          <span className="inline-flex items-center gap-1 text-white/70 text-xs">
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.723v6.554a1 1 0 01-1.447.894L15 14M3 8a2 2 0 012-2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8z" />
+            </svg>
+            Video
+          </span>
+        )}
       </div>
 
-      {/* Acciones — columna derecha */}
-      <div className="absolute right-3 bottom-5 flex flex-col items-center gap-5">
-        {/* Like */}
-        <button onClick={toggleLike} className="flex flex-col items-center gap-1">
+      {/* Controles — columna derecha */}
+      <div className="absolute right-3 bottom-5 flex flex-col items-center gap-5 z-10">
+        <button onClick={doLike} className="flex flex-col items-center gap-1">
           <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${liked ? 'bg-accent/20' : 'bg-black/30'}`}>
-            <svg className={`w-6 h-6 ${liked ? 'text-accent' : 'text-white'}`} fill={liked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+            <svg className={`w-6 h-6 transition-colors ${liked ? 'text-accent' : 'text-white'}`} fill={liked ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
             </svg>
           </div>
           <span className="text-white text-xs font-medium">{likesCount}</span>
         </button>
 
-        {/* Comentarios */}
         <button onClick={loadComments} className="flex flex-col items-center gap-1">
           <div className="w-10 h-10 rounded-full bg-black/30 flex items-center justify-center">
             <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -119,11 +182,10 @@ export default function ReelCard({ post, onDelete }) {
           <span className="text-white text-xs font-medium">{post.comments_count}</span>
         </button>
 
-        {/* Eliminar */}
         {canDelete && (
           <button onClick={handleDelete} className="flex flex-col items-center gap-1">
             <div className="w-10 h-10 rounded-full bg-black/30 flex items-center justify-center hover:bg-accent/30 transition-colors">
-              <svg className="w-5 h-5 text-white/70 hover:text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
               </svg>
             </div>
@@ -131,7 +193,7 @@ export default function ReelCard({ post, onDelete }) {
         )}
       </div>
 
-      {/* Panel de comentarios — drawer desde abajo */}
+      {/* Drawer de comentarios */}
       {showComments && (
         <div className="absolute inset-0 z-20 flex flex-col justify-end">
           <div className="absolute inset-0 bg-black/40" onClick={() => setShowComments(false)} />
@@ -144,7 +206,6 @@ export default function ReelCard({ post, onDelete }) {
                 </svg>
               </button>
             </div>
-
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
               {loadingComments && <p className="text-xs text-gray-400 text-center">{t('post.loading')}</p>}
               {!loadingComments && comments.length === 0 && (
@@ -160,7 +221,6 @@ export default function ReelCard({ post, onDelete }) {
                 </div>
               ))}
             </div>
-
             <form onSubmit={submitComment} className="flex gap-2 p-3 border-t border-gray-100">
               <Avatar user={user} size="sm" />
               <input
@@ -174,6 +234,16 @@ export default function ReelCard({ post, onDelete }) {
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes heartPop {
+          0%   { opacity: 0; transform: scale(0.3); }
+          30%  { opacity: 1; transform: scale(1.3); }
+          60%  { transform: scale(0.95); }
+          80%  { opacity: 1; transform: scale(1.1); }
+          100% { opacity: 0; transform: scale(1); }
+        }
+      `}</style>
     </div>
   )
 }
