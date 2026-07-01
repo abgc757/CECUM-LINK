@@ -190,7 +190,7 @@ export default function Admin() {
               <h2 className="text-sm font-semibold text-gray-500 mb-3">Pendientes de aprobación ({pending.length})</h2>
               <div className="space-y-2">
                 {pending.map(u => (
-                  <UserRow key={u.id} u={u} isSuperuser={isSuperuser} onApprove={approve} onChangeRole={changeRole} onDelete={deleteUser} />
+                  <UserRow key={u.id} u={u} isSuperuser={isSuperuser} currentUserId={user.id} onApprove={approve} onChangeRole={changeRole} onDelete={deleteUser} />
                 ))}
               </div>
             </div>
@@ -199,7 +199,7 @@ export default function Admin() {
             <h2 className="text-sm font-semibold text-gray-500 mb-3">Usuarios activos ({approved.length})</h2>
             <div className="space-y-2">
               {approved.map(u => (
-                <UserRow key={u.id} u={u} isSuperuser={isSuperuser} onApprove={approve} onChangeRole={changeRole} onDelete={deleteUser} />
+                <UserRow key={u.id} u={u} isSuperuser={isSuperuser} currentUserId={user.id} onApprove={approve} onChangeRole={changeRole} onDelete={deleteUser} />
               ))}
             </div>
           </div>
@@ -291,20 +291,22 @@ export default function Admin() {
   )
 }
 
-function UserRow({ u, isSuperuser, onApprove, onChangeRole, onDelete }) {
+function UserRow({ u, isSuperuser, currentUserId, onApprove, onChangeRole, onDelete }) {
+  const isOwnRow = u.id === currentUserId
   return (
-    <div className="card p-3 flex items-center gap-3 flex-wrap">
+    <div className={`card p-3 flex items-center gap-3 flex-wrap ${isOwnRow ? 'border-primary border-l-4' : ''}`}>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
           <p className="text-sm font-medium text-gray-900">{u.full_name}</p>
           <span className="text-xs text-gray-400">@{u.username}</span>
           <span className={`badge ${ROLE_COLORS[u.role] || 'bg-gray-100 text-gray-600'}`}>{ROLES[u.role] || u.role}</span>
           {!u.approved && <span className="badge bg-orange-50 text-orange-600">Pendiente</span>}
+          {isOwnRow && <span className="badge bg-primary-50 text-primary-700 text-xs">Tú</span>}
         </div>
         <p className="text-xs text-gray-400">{u.email} {u.grade && `· ${u.grade}`}</p>
       </div>
       <div className="flex items-center gap-2 flex-shrink-0">
-        {isSuperuser && (
+        {isSuperuser && !isOwnRow && (
           <select value={u.role} onChange={e => onChangeRole(u.id, e.target.value)}
             className="text-xs border border-gray-200 rounded-lg px-2 py-1 text-gray-600 focus:outline-none focus:ring-1 focus:ring-primary">
             <option value="student">Alumno</option>
@@ -318,7 +320,7 @@ function UserRow({ u, isSuperuser, onApprove, onChangeRole, onDelete }) {
           className={`text-xs px-3 py-1.5 rounded-lg font-medium ${u.approved ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>
           {u.approved ? 'Revocar' : 'Aprobar'}
         </button>
-        {isSuperuser && (
+        {isSuperuser && !isOwnRow && (
           <button onClick={() => onDelete(u.id)} className="text-gray-300 hover:text-accent p-1">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
           </button>

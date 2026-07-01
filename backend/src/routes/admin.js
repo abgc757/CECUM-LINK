@@ -45,6 +45,8 @@ router.patch('/users/:id/approve', auth, isMod, async (req, res) => {
 });
 
 router.patch('/users/:id/role', auth, isSuperuser, async (req, res) => {
+  if (parseInt(req.params.id) === req.user.id)
+    return res.status(403).json({ error: 'No puedes cambiar tu propio rol' });
   const { role } = req.body;
   const validRoles = ['student','teacher','parent','moderator','superuser'];
   if (!validRoles.includes(role)) return res.status(400).json({ error: 'Rol inválido' });
