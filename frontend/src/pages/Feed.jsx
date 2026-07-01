@@ -35,6 +35,7 @@ export default function Feed() {
   const videoPreviewRef = useRef()
   const timerRef = useRef()
   const chunksRef = useRef([])
+  const streamRef = useRef(null)   // ref estable — no sufre stale closure
 
   const loadPosts = async () => {
     const { data } = await api.get('/posts')
@@ -69,12 +70,26 @@ export default function Feed() {
     if (!composerOpen) stopCamera()
   }, [composerOpen])
 
+  // Detiene pistas del stream usando el ref — evita stale closure
   const stopCamera = () => {
-    cameraStream?.getTracks().forEach(t => t.stop())
+    clearInterval(timerRef.current)
+    streamRef.current?.getTracks().forEach(t => t.stop())
+    streamRef.current = null
     setCameraStream(null)
     setRecording(false)
     setRecordSeconds(0)
-    clearInterval(timerRef.current)
+  }
+
+  // Devuelve el mimeType base sin codecs para el Blob (Cloudinary no acepta codecs en el tipo)
+  const getBaseMimeType = () => {
+    const types = ['video/webm', 'video/mp4']
+    return types.find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm'
+  }
+
+  // mimeType completo (con codecs) solo para MediaRecorder
+  const getRecorderMimeType = () => {
+    const types = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4']
+    return types.find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm'
   }
 
   const startRecording = async (mode = facingMode) => {
@@ -83,23 +98,36 @@ export default function Feed() {
         video: { facingMode: mode },
         audio: true,
       })
-      setCameraStream(stream)   // el useEffect de arriba conecta el stream al <video>
+      streamRef.current = stream          // ref estable para callbacks
+      setCameraStream(stream)             // state para el render
       chunksRef.current = []
-      const mr = new MediaRecorder(stream, { mimeType: getSupportedMimeType() })
+
+      const mr = new MediaRecorder(stream, { mimeType: getRecorderMimeType() })
       mediaRecorderRef.current = mr
       mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data) }
       mr.onstop = () => {
-        const blob = new Blob(chunksRef.current, { type: getSupportedMimeType() })
+        // Blob con tipo base — compatible con Cloudinary
+        const blob = new Blob(chunksRef.current, { type: getBaseMimeType() })
         setVideoBlob(blob)
         setImage(null)
-        stopCamera()
+        // Detener cámara usando el ref (no el state, que puede ser stale)
+        clearInterval(timerRef.current)
+        streamRef.current?.getTracks().forEach(t => t.stop())
+        streamRef.current = null
+        setCameraStream(null)
+        setRecording(false)
+        setRecordSeconds(0)
       }
       mr.start(200)
       setRecording(true)
       setRecordSeconds(0)
       timerRef.current = setInterval(() => {
         setRecordSeconds(s => {
-          if (s + 1 >= MAX_VIDEO_SECONDS) { stopRecording(); return MAX_VIDEO_SECONDS }
+          if (s + 1 >= MAX_VIDEO_SECONDS) {
+            if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current.stop()
+            clearInterval(timerRef.current)
+            return MAX_VIDEO_SECONDS
+          }
           return s + 1
         })
       }, 1000)
@@ -111,32 +139,24 @@ export default function Feed() {
   const stopRecording = () => {
     clearInterval(timerRef.current)
     if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current.stop()
-    setRecording(false)
+    // mr.onstop se encarga de cerrar el stream y limpiar el state
   }
 
   const switchCamera = async () => {
     const newMode = facingMode === 'user' ? 'environment' : 'user'
     setFacingMode(newMode)
-    // Detener grabación en curso si la hay
-    if (recording) {
-      clearInterval(timerRef.current)
-      if (mediaRecorderRef.current?.state !== 'inactive') {
-        mediaRecorderRef.current.stop()
-      }
-      chunksRef.current = []
-      setRecording(false)
-      setRecordSeconds(0)
-    }
-    // Detener stream actual y abrir nuevo con la cámara opuesta
-    cameraStream?.getTracks().forEach(t => t.stop())
+    clearInterval(timerRef.current)
+    if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current.stop()
+    chunksRef.current = []
+    streamRef.current?.getTracks().forEach(t => t.stop())
+    streamRef.current = null
     setCameraStream(null)
+    setRecording(false)
+    setRecordSeconds(0)
     await startRecording(newMode)
   }
 
-  const getSupportedMimeType = () => {
-    const types = ['video/webm;codecs=vp9,opus', 'video/webm;codecs=vp8,opus', 'video/webm', 'video/mp4']
-    return types.find(t => MediaRecorder.isTypeSupported(t)) || 'video/webm'
-  }
+  const getSupportedMimeType = () => getBaseMimeType()
 
   const submit = async (e) => {
     e.preventDefault()
