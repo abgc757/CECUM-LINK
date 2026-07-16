@@ -68,9 +68,6 @@ export default function Login() {
           </p>
         </div>
 
-        <div className="mt-4 p-3 bg-primary-50 rounded-lg border border-primary-100 text-xs text-primary-700 text-center">
-          <strong>{t('auth.firstAccess')}:</strong> admin@cecum.edu.mx / Admin123!
-        </div>
       </div>
     </div>
   )

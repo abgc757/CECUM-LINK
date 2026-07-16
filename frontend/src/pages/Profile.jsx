@@ -6,6 +6,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { Avatar } from '../components/Layout'
 import PostCard from '../components/PostCard'
 import toast from 'react-hot-toast'
+import { compressImage } from '../utils/imageUtils'
 
 function mediaSrc(url) {
   if (!url) return null
@@ -61,12 +62,17 @@ export default function Profile() {
   const uploadAvatar = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-    const fd = new FormData()
-    fd.append('avatar', file)
-    const { data } = await api.patch('/users/me', fd)
-    setProfile(p => ({ ...p, avatar_url: data.avatar_url }))
-    setUser(u => ({ ...u, avatar_url: data.avatar_url }))
-    toast.success(t('profile.photoUpdated'))
+    try {
+      const compressed = await compressImage(file, { maxWidth: 400, quality: 0.85 })
+      const fd = new FormData()
+      fd.append('avatar', compressed)
+      const { data } = await api.patch('/users/me', fd)
+      setProfile(p => ({ ...p, avatar_url: data.avatar_url }))
+      setUser(u => ({ ...u, avatar_url: data.avatar_url }))
+      toast.success(t('profile.photoUpdated'))
+    } catch (err) {
+      toast.error(err?.response?.data?.error || 'Error al subir la foto de perfil')
+    }
   }
 
   if (!profile) return <div className="text-center py-12"><div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto" /></div>

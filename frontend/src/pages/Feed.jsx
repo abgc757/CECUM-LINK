@@ -6,6 +6,7 @@ import { useLanguage } from '../context/LanguageContext'
 import { Avatar } from '../components/Layout'
 import ReelCard from '../components/ReelCard'
 import toast from 'react-hot-toast'
+import { compressImage } from '../utils/imageUtils'
 
 const MAX_VIDEO_SECONDS = 30
 
@@ -166,7 +167,7 @@ export default function Feed() {
     try {
       const fd = new FormData()
       fd.append('content', content)
-      if (image) fd.append('image', image)
+      if (image) fd.append('image', await compressImage(image))
       if (videoBlob) {
         const ext = getBaseMimeType().includes('mp4') ? 'mp4' : 'webm'
         fd.append('video', videoBlob, `video.${ext}`)
