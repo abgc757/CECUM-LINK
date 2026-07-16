@@ -16,13 +16,7 @@ router.get('/', auth, async (req, res) => {
 router.post('/', auth, upload.single('image'), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: 'Imagen requerida' });
   const { caption, group_id } = req.body;
-  let image_url;
-  try {
-    image_url = await getImageUrl(req.file);
-  } catch (err) {
-    console.error('[gallery] Error subiendo imagen:', err.message);
-    return res.status(500).json({ error: 'Error al subir la imagen' });
-  }
+  const image_url = getImageUrl(req.file);
   const { rows } = await pool.query(
     `INSERT INTO gallery (user_id, group_id, image_url, caption) VALUES ($1,$2,$3,$4) RETURNING *`,
     [req.user.id, group_id || null, image_url, caption]

@@ -32,21 +32,21 @@ router.patch('/me', auth, upload.single('avatar'), async (req, res) => {
   if (full_name) { updates.push(`full_name=$${i++}`); params.push(full_name); }
   if (bio !== undefined) { updates.push(`bio=$${i++}`); params.push(bio); }
   if (req.file) {
-    try {
-      const url = await getImageUrl(req.file);
-      updates.push(`avatar_url=$${i++}`); params.push(url);
-    } catch (err) {
-      console.error('[users] Error subiendo avatar:', err.message);
-      return res.status(500).json({ error: 'Error al subir la imagen' });
-    }
+    updates.push(`avatar_url=$${i++}`);
+    params.push(getImageUrl(req.file));
   }
   if (!updates.length) return res.status(400).json({ error: 'Nada que actualizar' });
   params.push(req.user.id);
-  const { rows } = await pool.query(
-    `UPDATE users SET ${updates.join(',')} WHERE id=$${i} RETURNING id, username, full_name, avatar_url, bio, role`,
-    params
-  );
-  res.json(rows[0]);
+  try {
+    const { rows } = await pool.query(
+      `UPDATE users SET ${updates.join(',')} WHERE id=$${i} RETURNING id, username, full_name, avatar_url, bio, role`,
+      params
+    );
+    res.json(rows[0]);
+  } catch (err) {
+    console.error('[users] PATCH /me error:', err.message);
+    res.status(500).json({ error: 'Error al actualizar perfil' });
+  }
 });
 
 module.exports = router;
