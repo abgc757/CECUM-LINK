@@ -214,7 +214,8 @@ export default function Feed() {
   }
 
   return (
-    <div className="fixed inset-0 top-14 flex flex-col bg-gray-950">
+    <div className="fixed inset-x-0 top-14 bottom-16 md:bottom-0 flex flex-col bg-gray-950">
+
 
       {/* Botón + nueva publicación — esquina superior derecha */}
       <button

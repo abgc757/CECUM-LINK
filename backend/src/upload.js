@@ -23,12 +23,12 @@ const upload = multer({
 
 function getImageUrl(file) {
   if (!file) return null;
-  return `/uploads/${file.filename}`;
+  return `/api/uploads/${file.filename}`;
 }
 
 function getVideoUrl(file) {
   if (!file) return null;
-  return `/uploads/${file.filename}`;
+  return `/api/uploads/${file.filename}`;
 }
 
 module.exports = { upload, getImageUrl, getVideoUrl, VIDEO_MIMETYPES, UPLOADS_DIR };

@@ -19,7 +19,11 @@ const io = new Server(server, { cors: corsOptions });
 app.use(cors(corsOptions));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+const UPLOADS_DIR = path.join(__dirname, '../uploads');
+// Sirve archivos bajo /api/uploads/ (pasa por el location /api/ de nginx)
+app.use('/api/uploads', express.static(UPLOADS_DIR));
+// Compatibilidad con URLs antiguas almacenadas como /uploads/
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/posts', require('./routes/posts'));
