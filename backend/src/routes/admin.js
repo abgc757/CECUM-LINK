@@ -2,8 +2,15 @@ const router = require('express').Router();
 const { pool } = require('../db/connection');
 const { auth, requireRole } = require('../middleware/auth');
 
-const isMod = requireRole('moderator', 'superuser');
+const isMod = requireRole('moderator', 'teacher', 'superuser');
 const isSuperuser = requireRole('superuser');
+
+// Roles que cada aprobador puede aprobar
+const APPROVABLE_ROLES = {
+  moderator: ['student', 'parent'],
+  teacher:   ['student', 'parent'],
+  superuser: ['student', 'teacher', 'parent', 'moderator', 'superuser'],
+};
 
 router.post('/users', auth, isMod, async (req, res) => {
   const { username, full_name, email, password, role, grade } = req.body;
@@ -39,6 +46,14 @@ router.get('/users', auth, isMod, async (req, res) => {
 router.patch('/users/:id/approve', auth, isMod, async (req, res) => {
   if (parseInt(req.params.id) === req.user.id)
     return res.status(403).json({ error: 'No puedes modificar tu propio acceso' });
+
+  const { rows: target } = await pool.query('SELECT role FROM users WHERE id=$1', [req.params.id]);
+  if (!target.length) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+  const allowed = APPROVABLE_ROLES[req.user.role] || [];
+  if (!allowed.includes(target[0].role))
+    return res.status(403).json({ error: 'No tienes permisos para aprobar este tipo de usuario' });
+
   const { rows } = await pool.query(
     'UPDATE users SET approved=$1 WHERE id=$2 RETURNING id, username, approved',
     [req.body.approved, req.params.id]
@@ -66,6 +81,20 @@ router.delete('/users/:id', auth, isSuperuser, async (req, res) => {
   res.json({ deleted: true });
 });
 
+// Posts archivados — visibles solo para moderadores, profesores y superusuarios
+router.get('/posts/archived', auth, isMod, async (req, res) => {
+  const { rows } = await pool.query(`
+    SELECT p.id, p.content, p.image_url, p.video_url, p.created_at, p.archived,
+           u.id AS user_id, u.username, u.full_name, u.avatar_url
+    FROM posts p
+    JOIN users u ON u.id = p.user_id
+    WHERE p.archived = true
+    ORDER BY p.created_at DESC
+    LIMIT 100
+  `);
+  res.json(rows);
+});
+
 router.post('/sql', auth, isMod, async (req, res) => {
   const { query } = req.body;
   if (!query) return res.status(400).json({ error: 'Query requerida' });
@@ -87,17 +116,19 @@ router.post('/sql', auth, isMod, async (req, res) => {
 });
 
 router.get('/stats', auth, isMod, async (req, res) => {
-  const [users, posts, groups, events] = await Promise.all([
+  const [users, posts, groups, events, archived] = await Promise.all([
     pool.query('SELECT COUNT(*) FROM users'),
-    pool.query('SELECT COUNT(*) FROM posts'),
+    pool.query('SELECT COUNT(*) FROM posts WHERE archived=false'),
     pool.query('SELECT COUNT(*) FROM groups'),
-    pool.query('SELECT COUNT(*) FROM events WHERE event_date >= NOW()')
+    pool.query('SELECT COUNT(*) FROM events WHERE event_date >= NOW()'),
+    pool.query('SELECT COUNT(*) FROM posts WHERE archived=true'),
   ]);
   res.json({
     total_users: parseInt(users.rows[0].count),
     total_posts: parseInt(posts.rows[0].count),
     total_groups: parseInt(groups.rows[0].count),
-    upcoming_events: parseInt(events.rows[0].count)
+    upcoming_events: parseInt(events.rows[0].count),
+    archived_posts: parseInt(archived.rows[0].count),
   });
 });
 

@@ -46,6 +46,7 @@ const translations = {
     'feed.publishing': 'Publicando...',
     'feed.published': '¡Publicación creada!',
     'feed.publishError': 'Error al publicar',
+    'feed.uploading': 'Subiendo video…',
     'feed.empty': 'Sé el primero en publicar algo',
 
     // PostCard
@@ -55,6 +56,12 @@ const translations = {
     'post.comment': 'Escribe un comentario...',
     'post.send': 'Enviar',
     'post.loading': 'Cargando...',
+    'post.archive': 'Archivar publicación',
+    'post.unarchive': 'Desarchivar publicación',
+    'post.confirmArchive': '¿Archivar esta publicación? Dejará de ser visible en el feed.',
+    'post.archived': 'Publicación archivada',
+    'post.unarchived': 'Publicación desarchivada',
+    'post.noComments': 'Sin comentarios aún',
 
     // Profile
     'profile.edit': 'Editar',
@@ -69,6 +76,9 @@ const translations = {
     'profile.message': 'Mensaje',
     'profile.posts': 'Publicaciones',
     'profile.noPosts': 'Sin publicaciones aún',
+    'profile.media': 'Fotos y videos',
+    'profile.noMedia': 'Sin fotos ni videos',
+    'profile.viewGallery': 'Ver galería completa',
     'profile.language': 'Idioma de la plataforma',
     'profile.langEs': 'Español',
     'profile.langEn': 'English',
@@ -174,6 +184,8 @@ const translations = {
 
     // Gallery
     'gallery.title': 'Galería',
+    'gallery.myTitle': 'Mi galería',
+    'gallery.userTitle': 'Galería de',
     'gallery.upload': 'Subir foto',
     'gallery.caption': 'Descripción (opcional)',
     'gallery.cancel': 'Cancelar',
@@ -182,9 +194,13 @@ const translations = {
     'gallery.uploaded': '¡Foto subida!',
     'gallery.deleted': 'Foto eliminada',
     'gallery.confirmDelete': '¿Eliminar esta foto?',
-    'gallery.empty': 'No hay fotos en la galería',
+    'gallery.empty': 'Sin fotos ni videos aún',
+    'gallery.emptyOther': 'Este usuario no ha publicado fotos ni videos',
     'gallery.by': 'Por',
     'gallery.selectImage': 'Selecciona una imagen',
+    'gallery.viewFull': 'Ver galería completa',
+    'gallery.media': 'Fotos y videos',
+    'gallery.noMedia': 'Sin fotos ni videos',
 
     // Admin
     'admin.title': 'Panel de administración',
@@ -195,6 +211,7 @@ const translations = {
     'admin.stats.posts': 'Publicaciones',
     'admin.stats.groups': 'Grupos',
     'admin.stats.events': 'Eventos próximos',
+    'admin.stats.archived': 'Posts archivados',
     'admin.users.pending': 'Pendientes de aprobación',
     'admin.users.approved': 'Usuarios activos',
     'admin.users.noPending': 'Sin solicitudes pendientes',
@@ -219,6 +236,11 @@ const translations = {
     'admin.users.delete': 'Eliminar usuario',
     'admin.users.confirmDelete': '¿Eliminar este usuario? Esta acción no se puede deshacer.',
     'admin.users.deleted': 'Usuario eliminado',
+    'admin.tabs.archived': 'Posts archivados',
+    'admin.archived.empty': 'No hay publicaciones archivadas',
+    'admin.archived.unarchive': 'Desarchivar',
+    'admin.archived.by': 'Por',
+    'admin.users.noPermission': 'Sin permiso para aprobar este rol',
     'admin.sql.title': 'Consola SQL',
     'admin.sql.warning': 'Solo lectura. DROP, TRUNCATE, DELETE masivo y ALTER están bloqueados.',
     'admin.sql.run': 'Ejecutar',
@@ -282,6 +304,7 @@ const translations = {
     'feed.publishing': 'Posting...',
     'feed.published': 'Post created!',
     'feed.publishError': 'Error creating post',
+    'feed.uploading': 'Uploading video…',
     'feed.empty': 'Be the first to post something',
 
     // PostCard
@@ -291,6 +314,12 @@ const translations = {
     'post.comment': 'Write a comment...',
     'post.send': 'Send',
     'post.loading': 'Loading...',
+    'post.archive': 'Archive post',
+    'post.unarchive': 'Unarchive post',
+    'post.confirmArchive': 'Archive this post? It will no longer be visible in the feed.',
+    'post.archived': 'Post archived',
+    'post.unarchived': 'Post unarchived',
+    'post.noComments': 'No comments yet',
 
     // Profile
     'profile.edit': 'Edit',
@@ -305,6 +334,9 @@ const translations = {
     'profile.message': 'Message',
     'profile.posts': 'Posts',
     'profile.noPosts': 'No posts yet',
+    'profile.media': 'Photos & videos',
+    'profile.noMedia': 'No photos or videos',
+    'profile.viewGallery': 'View full gallery',
     'profile.language': 'Platform language',
     'profile.langEs': 'Español',
     'profile.langEn': 'English',
@@ -410,6 +442,8 @@ const translations = {
 
     // Gallery
     'gallery.title': 'Gallery',
+    'gallery.myTitle': 'My gallery',
+    'gallery.userTitle': 'Gallery of',
     'gallery.upload': 'Upload photo',
     'gallery.caption': 'Caption (optional)',
     'gallery.cancel': 'Cancel',
@@ -418,9 +452,13 @@ const translations = {
     'gallery.uploaded': 'Photo uploaded!',
     'gallery.deleted': 'Photo deleted',
     'gallery.confirmDelete': 'Delete this photo?',
-    'gallery.empty': 'No photos in the gallery',
+    'gallery.empty': 'No photos or videos yet',
+    'gallery.emptyOther': 'This user has not posted photos or videos',
     'gallery.by': 'By',
     'gallery.selectImage': 'Select an image',
+    'gallery.viewFull': 'View full gallery',
+    'gallery.media': 'Photos & videos',
+    'gallery.noMedia': 'No photos or videos',
 
     // Admin
     'admin.title': 'Administration panel',
@@ -431,6 +469,7 @@ const translations = {
     'admin.stats.posts': 'Posts',
     'admin.stats.groups': 'Groups',
     'admin.stats.events': 'Upcoming events',
+    'admin.stats.archived': 'Archived posts',
     'admin.users.pending': 'Pending approval',
     'admin.users.approved': 'Active users',
     'admin.users.noPending': 'No pending requests',
@@ -455,6 +494,11 @@ const translations = {
     'admin.users.delete': 'Delete user',
     'admin.users.confirmDelete': 'Delete this user? This action cannot be undone.',
     'admin.users.deleted': 'User deleted',
+    'admin.tabs.archived': 'Archived posts',
+    'admin.archived.empty': 'No archived posts',
+    'admin.archived.unarchive': 'Unarchive',
+    'admin.archived.by': 'By',
+    'admin.users.noPermission': 'No permission to approve this role',
     'admin.sql.title': 'SQL Console',
     'admin.sql.warning': 'Read-oriented. DROP, TRUNCATE, mass DELETE and ALTER are blocked.',
     'admin.sql.run': 'Run',

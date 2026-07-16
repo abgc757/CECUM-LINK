@@ -1,94 +1,198 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import api, { getApiBase } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
-import toast from 'react-hot-toast'
+import { Avatar } from '../components/Layout'
+import { formatDistanceToNow } from 'date-fns'
+import { es, enUS } from 'date-fns/locale'
+
+function mediaSrc(url) {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  return `${getApiBase()}${url}`
+}
+
 
 export default function Gallery() {
+  const { userId } = useParams()
   const { user } = useAuth()
-  const { t } = useLanguage()
-  const [photos, setPhotos] = useState([])
+  const { t, lang } = useLanguage()
+  const navigate = useNavigate()
+
+  const targetId = userId ? parseInt(userId) : user.id
+  const isMe = targetId === user.id
+
+  const [media, setMedia] = useState([])
+  const [profile, setProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
-  const [uploading, setUploading] = useState(false)
-  const [caption, setCaption] = useState('')
-  const fileRef = useRef()
 
-  useEffect(() => { api.get('/gallery').then(r => setPhotos(r.data)) }, [])
+  const dateLocale = lang === 'en' ? enUS : es
 
-  const upload = async (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-    setUploading(true)
-    const fd = new FormData()
-    fd.append('image', file)
-    fd.append('caption', caption)
-    try {
-      const { data } = await api.post('/gallery', fd)
-      setPhotos(p => [{ ...data, username: user.username, full_name: user.full_name }, ...p])
-      setCaption('')
-      toast.success(t('gallery.uploaded'))
-    } catch { toast.error('Error') }
-    finally { setUploading(false) }
-  }
+  useEffect(() => {
+    setLoading(true)
+    const fetches = [
+      api.get(`/posts/media?user_id=${targetId}`),
+    ]
+    if (!isMe) fetches.push(api.get(`/users/${targetId}`))
 
-  const del = async (id) => {
-    if (!confirm(t('gallery.confirmDelete'))) return
-    await api.delete(`/gallery/${id}`)
-    setPhotos(p => p.filter(x => x.id !== id))
-    setSelected(null)
-    toast.success(t('gallery.deleted'))
-  }
+    Promise.all(fetches).then(([mediaRes, profileRes]) => {
+      setMedia(mediaRes.data)
+      if (profileRes) setProfile(profileRes.data)
+    }).finally(() => setLoading(false))
+  }, [targetId, isMe])
 
-  const imgSrc = (url) => url?.startsWith('http') ? url : `${getApiBase()}${url}`
+  const title = isMe
+    ? t('gallery.myTitle')
+    : `${t('gallery.userTitle')} ${profile?.full_name || '...'}`
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{t('gallery.title')}</h1>
-        <div className="flex gap-2 items-center">
-          <input className="input text-sm w-48 hidden sm:block" placeholder={t('gallery.caption')} value={caption} onChange={e => setCaption(e.target.value)} />
-          <button onClick={() => fileRef.current.click()} disabled={uploading} className="btn-primary text-sm">
-            {uploading ? t('gallery.uploading') : `+ ${t('gallery.upload')}`}
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        {!isMe && (
+          <button onClick={() => navigate(-1)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-500">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
           </button>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={upload} />
+        )}
+        <div className="flex-1">
+          <h1 className="text-xl font-bold text-gray-900">{title}</h1>
+          {!isMe && profile && (
+            <p className="text-sm text-gray-400">@{profile.username}</p>
+          )}
         </div>
+        {!isMe && profile && (
+          <button
+            onClick={() => navigate(`/profile/${targetId}`)}
+            className="btn-secondary text-sm"
+          >
+            {t('profile.edit').replace('Editar', 'Perfil').replace('Edit', 'Profile')}
+          </button>
+        )}
       </div>
 
-      {photos.length === 0 && (
-        <div className="card p-12 text-center text-gray-400">
-          <svg className="w-16 h-16 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-          <p>{t('gallery.empty')}</p>
+      {/* Perfil del usuario visitado */}
+      {!isMe && profile && (
+        <div className="card p-4 flex items-center gap-4">
+          <Avatar user={profile} size="lg" />
+          <div>
+            <p className="font-semibold text-gray-900">{profile.full_name}</p>
+            <p className="text-sm text-gray-400">@{profile.username}</p>
+            {profile.bio && <p className="text-sm text-gray-600 mt-1">{profile.bio}</p>}
+          </div>
         </div>
       )}
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        {photos.map(p => (
-          <button key={p.id} onClick={() => setSelected(p)} className="aspect-square rounded-xl overflow-hidden hover:opacity-90 transition-opacity group relative">
-            <img src={imgSrc(p.image_url)} alt={p.caption || ''} className="w-full h-full object-cover" />
-            {p.caption && (
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                <p className="text-white text-xs truncate">{p.caption}</p>
-              </div>
-            )}
-          </button>
-        ))}
-      </div>
+      {/* Estado de carga */}
+      {loading && (
+        <div className="flex justify-center py-12">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
 
+      {/* Sin media */}
+      {!loading && media.length === 0 && (
+        <div className="card p-12 text-center text-gray-400">
+          <svg className="w-16 h-16 mx-auto mb-3 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+          <p>{isMe ? t('gallery.empty') : t('gallery.emptyOther')}</p>
+        </div>
+      )}
+
+      {/* Grid de media */}
+      {!loading && media.length > 0 && (
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1">
+          {media.map(item => (
+            <button
+              key={item.id}
+              onClick={() => setSelected(item)}
+              className="aspect-square relative overflow-hidden rounded-sm hover:opacity-90 active:opacity-75 transition-opacity group bg-gray-900"
+            >
+              {item.video_url ? (
+                <>
+                  <video
+                    src={mediaSrc(item.video_url)}
+                    className="w-full h-full object-cover"
+                    muted
+                    playsInline
+                    preload="metadata"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-8 h-8 bg-black/50 rounded-full flex items-center justify-center">
+                      <svg className="w-4 h-4 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M8 5v14l11-7z" />
+                      </svg>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <img
+                  src={mediaSrc(item.image_url)}
+                  alt={item.content || ''}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Lightbox */}
       {selected && (
-        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4" onClick={() => setSelected(null)}>
-          <div className="max-w-2xl w-full bg-white rounded-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            <img src={imgSrc(selected.image_url)} alt="" className="w-full object-contain max-h-[60vh]" />
-            <div className="p-4 flex items-center justify-between">
-              <div>
-                {selected.caption && <p className="font-medium text-gray-800">{selected.caption}</p>}
-                <p className="text-sm text-gray-400">{t('gallery.by')} {selected.full_name}</p>
-              </div>
-              <div className="flex gap-2">
-                {(selected.user_id === user.id || ['moderator','superuser'].includes(user.role)) && (
-                  <button onClick={() => del(selected.id)} className="btn-danger text-sm">{t('common.delete')}</button>
-                )}
-                <button onClick={() => setSelected(null)} className="btn-secondary text-sm">{t('common.cancel')}</button>
-              </div>
+        <div
+          className="fixed inset-0 bg-black/90 z-50 flex flex-col"
+          onClick={() => setSelected(null)}
+        >
+          <div
+            className="relative flex-1 flex items-center justify-center p-4"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Cerrar */}
+            <button
+              onClick={() => setSelected(null)}
+              className="absolute top-4 right-4 z-10 w-9 h-9 bg-black/50 rounded-full flex items-center justify-center text-white hover:bg-black/70"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+
+            {selected.video_url ? (
+              <video
+                src={mediaSrc(selected.video_url)}
+                controls
+                autoPlay
+                playsInline
+                className="max-w-full max-h-[70vh] rounded-lg"
+              />
+            ) : (
+              <img
+                src={mediaSrc(selected.image_url)}
+                alt=""
+                className="max-w-full max-h-[70vh] object-contain rounded-lg"
+              />
+            )}
+          </div>
+
+          {/* Footer del lightbox */}
+          <div
+            className="bg-black/70 px-5 py-4 flex items-center gap-3"
+            onClick={e => e.stopPropagation()}
+          >
+            <Avatar user={{ full_name: selected.full_name, avatar_url: selected.avatar_url }} size="sm" />
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-sm font-medium">{selected.full_name}</p>
+              {selected.content && (
+                <p className="text-white/60 text-xs truncate">{selected.content}</p>
+              )}
+              <p className="text-white/40 text-xs">
+                {formatDistanceToNow(new Date(selected.created_at), { locale: dateLocale, addSuffix: true })}
+              </p>
             </div>
           </div>
         </div>

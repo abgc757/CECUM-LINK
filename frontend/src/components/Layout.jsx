@@ -69,7 +69,7 @@ export default function Layout() {
       isActive ? 'bg-primary text-white' : 'text-gray-600 hover:bg-primary-50 hover:text-primary'
     }`
 
-  const isAdmin = ['moderator', 'superuser'].includes(user.role)
+  const isAdmin = ['moderator', 'teacher', 'superuser'].includes(user.role)
 
   const mobileLinks = [
     ['/', t('nav.feed')],

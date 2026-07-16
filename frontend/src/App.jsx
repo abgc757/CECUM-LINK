@@ -45,12 +45,13 @@ export default function App() {
             <Route path="/groups/:id" element={<GroupDetail />} />
             <Route path="/events" element={<Events />} />
             <Route path="/gallery" element={<Gallery />} />
+            <Route path="/gallery/:userId" element={<Gallery />} />
             <Route path="/messages" element={<Messages />} />
             <Route path="/messages/:userId" element={<Messages />} />
             <Route path="/grades" element={<Grades />} />
             <Route path="/profile/:id" element={<Profile />} />
             <Route path="/admin" element={
-              <PrivateRoute roles={['moderator','superuser']}><Admin /></PrivateRoute>
+              <PrivateRoute roles={['moderator','teacher','superuser']}><Admin /></PrivateRoute>
             } />
           </Route>
         </Routes>

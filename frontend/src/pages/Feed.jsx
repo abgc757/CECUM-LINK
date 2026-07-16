@@ -162,15 +162,19 @@ export default function Feed() {
     e.preventDefault()
     if (!content.trim()) return
     setPosting(true)
-    const fd = new FormData()
-    fd.append('content', content)
-    if (image) fd.append('image', image)
-    if (videoBlob) {
-      const ext = getSupportedMimeType().includes('mp4') ? 'mp4' : 'webm'
-      fd.append('video', videoBlob, `video.${ext}`)
-    }
+    const toastId = videoBlob ? toast.loading(t('feed.uploading') || 'Subiendo video…') : null
     try {
-      const { data } = await api.post('/posts', fd)
+      const fd = new FormData()
+      fd.append('content', content)
+      if (image) fd.append('image', image)
+      if (videoBlob) {
+        const ext = getBaseMimeType().includes('mp4') ? 'mp4' : 'webm'
+        fd.append('video', videoBlob, `video.${ext}`)
+      }
+
+      // Timeout extendido a 3 min para videos grandes
+      const { data } = await api.post('/posts', fd, { timeout: 180000 })
+      if (toastId) toast.dismiss(toastId)
       setPosts(p => [{
         ...data,
         username: user.username,
@@ -191,8 +195,11 @@ export default function Feed() {
         likes_count: 0, comments_count: 0, liked: false
       })
       feedRef.current?.scrollTo({ top: 0, behavior: 'smooth' })
-    } catch {
-      toast.error(t('feed.publishError'))
+    } catch (err) {
+      if (toastId) toast.dismiss(toastId)
+      const msg = err?.response?.data?.error || err?.message || t('feed.publishError')
+      toast.error(msg)
+      console.error('[Feed] Error publicando:', err)
     } finally {
       setPosting(false)
     }

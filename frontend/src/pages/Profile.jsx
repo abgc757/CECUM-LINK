@@ -1,11 +1,18 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import api from '../api'
+import api, { getApiBase } from '../api'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 import { Avatar } from '../components/Layout'
 import PostCard from '../components/PostCard'
 import toast from 'react-hot-toast'
+
+function mediaSrc(url) {
+  if (!url) return null
+  if (url.startsWith('http')) return url
+  return `${getApiBase()}${url}`
+}
+
 
 export default function Profile() {
   const { id } = useParams()
@@ -14,6 +21,7 @@ export default function Profile() {
   const navigate = useNavigate()
   const [profile, setProfile] = useState(null)
   const [posts, setPosts] = useState([])
+  const [media, setMedia] = useState([])
   const [editing, setEditing] = useState(false)
   const [form, setForm] = useState({ full_name: '', bio: '' })
   const [saving, setSaving] = useState(false)
@@ -30,6 +38,7 @@ export default function Profile() {
 
   useEffect(() => {
     api.get(`/users/${id}`).then(r => { setProfile(r.data); setForm({ full_name: r.data.full_name, bio: r.data.bio || '' }) })
+    api.get(`/posts/media?user_id=${id}`).then(r => setMedia(r.data)).catch(() => {})
     api.get(`/posts?user_id=${id}`).catch(() => {})
   }, [id])
 
@@ -134,6 +143,58 @@ export default function Profile() {
                 {t('profile.langEn')}
               </button>
             </div>
+          </div>
+        )}
+      </div>
+
+      {/* Sección de fotos y videos */}
+      <div>
+        <div className="flex items-center justify-between px-1 mb-2">
+          <span className="text-sm font-medium text-gray-500">{t('profile.media')}</span>
+          {media.length > 0 && (
+            <button
+              onClick={() => navigate(`/gallery/${id}`)}
+              className="text-xs text-primary font-medium hover:underline"
+            >
+              {t('profile.viewGallery')} →
+            </button>
+          )}
+        </div>
+        {media.length === 0 ? (
+          <div className="card px-4 py-6 text-center text-gray-400 text-sm">{t('profile.noMedia')}</div>
+        ) : (
+          <div className="grid grid-cols-3 gap-1">
+            {media.slice(0, 9).map(item => (
+              <button
+                key={item.id}
+                onClick={() => navigate(`/gallery/${id}`)}
+                className="aspect-square relative overflow-hidden rounded-sm bg-gray-900 hover:opacity-90 transition-opacity"
+              >
+                {item.video_url ? (
+                  <>
+                    <video
+                      src={mediaSrc(item.video_url)}
+                      className="w-full h-full object-cover"
+                      muted playsInline preload="metadata"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-7 h-7 bg-black/50 rounded-full flex items-center justify-center">
+                        <svg className="w-3.5 h-3.5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z" />
+                        </svg>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <img
+                    src={mediaSrc(item.image_url)}
+                    alt=""
+                    className="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                )}
+              </button>
+            ))}
           </div>
         )}
       </div>

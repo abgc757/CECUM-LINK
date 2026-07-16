@@ -8,12 +8,6 @@ import { useLanguage } from '../context/LanguageContext'
 import api, { getApiBase } from '../api'
 import toast from 'react-hot-toast'
 
-// Aplica transformaciones de Cloudinary para imagen responsiva
-function responsiveUrl(url, width = 800) {
-  if (!url || !url.includes('res.cloudinary.com')) return url
-  return url.replace('/upload/', `/upload/c_fill,w_${width},f_auto,q_auto/`)
-}
-
 function mediaSrc(url) {
   if (!url) return null
   if (url.startsWith('http')) return url
@@ -36,8 +30,9 @@ export default function ReelCard({ post, onDelete }) {
   const lastTapRef = useRef(0)
   const dateLocale = lang === 'en' ? enUS : es
   const canDelete = user.id === post.user_id || ['moderator', 'superuser'].includes(user.role)
+  const canArchive = ['moderator', 'teacher', 'superuser'].includes(user.role)
 
-  const imgSrc = responsiveUrl(mediaSrc(post.image_url))
+  const imgSrc = mediaSrc(post.image_url)
   const vidSrc = mediaSrc(post.video_url)
 
   const doLike = useCallback(async () => {
@@ -83,6 +78,13 @@ export default function ReelCard({ post, onDelete }) {
     if (!confirm(t('post.confirmDelete'))) return
     await api.delete(`/posts/${post.id}`)
     toast.success(t('post.deleted'))
+    onDelete?.(post.id)
+  }
+
+  const handleArchive = async () => {
+    if (!confirm(t('post.confirmArchive'))) return
+    await api.patch(`/posts/${post.id}/archive`, { archived: true })
+    toast.success(t('post.archived'))
     onDelete?.(post.id)
   }
 
@@ -182,6 +184,15 @@ export default function ReelCard({ post, onDelete }) {
           <span className="text-white text-xs font-medium">{post.comments_count}</span>
         </button>
 
+        {canArchive && (
+          <button onClick={handleArchive} className="flex flex-col items-center gap-1" title={t('post.archive')}>
+            <div className="w-10 h-10 rounded-full bg-black/30 flex items-center justify-center hover:bg-yellow-500/30 transition-colors">
+              <svg className="w-5 h-5 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+              </svg>
+            </div>
+          </button>
+        )}
         {canDelete && (
           <button onClick={handleDelete} className="flex flex-col items-center gap-1">
             <div className="w-10 h-10 rounded-full bg-black/30 flex items-center justify-center hover:bg-accent/30 transition-colors">
