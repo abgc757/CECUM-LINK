@@ -17,6 +17,7 @@ const APPROVABLE = {
 }
 
 const EMPTY_USER_FORM = { username: '', full_name: '', email: '', password: '', role: 'student', grade: '' }
+const EMPTY_PWD_MODAL = { open: false, userId: null, username: '', password: '', confirm: '', saving: false }
 
 function mediaSrc(url) {
   if (!url) return null
@@ -39,6 +40,7 @@ export default function Admin() {
   const [creatingUser, setCreatingUser] = useState(false)
   const [userForm, setUserForm] = useState(EMPTY_USER_FORM)
   const [savingUser, setSavingUser] = useState(false)
+  const [pwdModal, setPwdModal] = useState(EMPTY_PWD_MODAL)
 
   const isSuperuser = user.role === 'superuser'
   const dateLocale = lang === 'en' ? enUS : es
@@ -94,6 +96,25 @@ export default function Admin() {
     }
   }
 
+  const openPwdModal = (u) => setPwdModal({ open: true, userId: u.id, username: u.username, password: '', confirm: '', saving: false })
+
+  const changePassword = async (e) => {
+    e.preventDefault()
+    if (pwdModal.password !== pwdModal.confirm) {
+      toast.error('Las contraseñas no coinciden')
+      return
+    }
+    setPwdModal(m => ({ ...m, saving: true }))
+    try {
+      await api.patch(`/admin/users/${pwdModal.userId}/password`, { password: pwdModal.password })
+      toast.success(`Contraseña de @${pwdModal.username} actualizada`)
+      setPwdModal(EMPTY_PWD_MODAL)
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Error al cambiar contraseña')
+      setPwdModal(m => ({ ...m, saving: false }))
+    }
+  }
+
   const deleteUser = async (id) => {
     if (!confirm(t('admin.users.confirmDelete'))) return
     await api.delete(`/admin/users/${id}`)
@@ -134,6 +155,48 @@ export default function Admin() {
 
   return (
     <div className="space-y-6">
+
+      {/* Modal cambio de contraseña */}
+      {pwdModal.open && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm p-6">
+            <h2 className="font-semibold text-gray-900 mb-1">Cambiar contraseña</h2>
+            <p className="text-sm text-gray-400 mb-4">@{pwdModal.username}</p>
+            <form onSubmit={changePassword} className="space-y-3">
+              <div>
+                <label className="label">Nueva contraseña</label>
+                <input
+                  type="password" className="input" required minLength={8}
+                  placeholder="Mínimo 8 caracteres"
+                  value={pwdModal.password}
+                  onChange={e => setPwdModal(m => ({ ...m, password: e.target.value }))}
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="label">Confirmar contraseña</label>
+                <input
+                  type="password" className="input" required minLength={8}
+                  placeholder="Repite la contraseña"
+                  value={pwdModal.confirm}
+                  onChange={e => setPwdModal(m => ({ ...m, confirm: e.target.value }))}
+                />
+              </div>
+              {pwdModal.password && pwdModal.confirm && pwdModal.password !== pwdModal.confirm && (
+                <p className="text-xs text-accent">Las contraseñas no coinciden</p>
+              )}
+              <div className="flex gap-2 justify-end pt-1">
+                <button type="button" onClick={() => setPwdModal(EMPTY_PWD_MODAL)}
+                  className="btn-secondary text-sm">Cancelar</button>
+                <button type="submit" className="btn-primary text-sm"
+                  disabled={pwdModal.saving || pwdModal.password !== pwdModal.confirm || !pwdModal.password}>
+                  {pwdModal.saving ? 'Guardando…' : 'Guardar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">{t('admin.title')}</h1>
         <span className="badge bg-primary-50 text-primary-700">{ROLES[user.role]}</span>
@@ -240,7 +303,7 @@ export default function Admin() {
               <h2 className="text-sm font-semibold text-gray-500 mb-3">{t('admin.users.pending')} ({pending.length})</h2>
               <div className="space-y-2">
                 {pending.map(u => (
-                  <UserRow key={u.id} u={u} currentUser={user} onApprove={approve} onChangeRole={changeRole} onDelete={deleteUser} />
+                  <UserRow key={u.id} u={u} currentUser={user} onApprove={approve} onChangeRole={changeRole} onDelete={deleteUser} onChangePassword={openPwdModal} />
                 ))}
               </div>
             </div>
@@ -250,7 +313,7 @@ export default function Admin() {
             <h2 className="text-sm font-semibold text-gray-500 mb-3">{t('admin.users.approved')} ({approved.length})</h2>
             <div className="space-y-2">
               {approved.map(u => (
-                <UserRow key={u.id} u={u} currentUser={user} onApprove={approve} onChangeRole={changeRole} onDelete={deleteUser} />
+                <UserRow key={u.id} u={u} currentUser={user} onApprove={approve} onChangeRole={changeRole} onDelete={deleteUser} onChangePassword={openPwdModal} />
               ))}
             </div>
           </div>
@@ -398,7 +461,7 @@ export default function Admin() {
   )
 }
 
-function UserRow({ u, currentUser, onApprove, onChangeRole, onDelete }) {
+function UserRow({ u, currentUser, onApprove, onChangeRole, onDelete, onChangePassword }) {
   const isSuperuser = currentUser.role === 'superuser'
   const isOwnRow = u.id === currentUser.id
   const canApproveThis = (APPROVABLE[currentUser.role] || []).includes(u.role)
@@ -433,6 +496,15 @@ function UserRow({ u, currentUser, onApprove, onChangeRole, onDelete }) {
             className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors
               ${u.approved ? 'bg-gray-100 text-gray-600 hover:bg-gray-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>
             {u.approved ? 'Revocar' : 'Aprobar'}
+          </button>
+        )}
+        {isSuperuser && !isOwnRow && (
+          <button onClick={() => onChangePassword(u)} title="Cambiar contraseña"
+            className="text-gray-300 hover:text-primary p-1">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+            </svg>
           </button>
         )}
         {isSuperuser && !isOwnRow && (

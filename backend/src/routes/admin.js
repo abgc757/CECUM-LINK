@@ -74,6 +74,24 @@ router.patch('/users/:id/role', auth, isSuperuser, async (req, res) => {
   res.json(rows[0]);
 });
 
+router.patch('/users/:id/password', auth, isSuperuser, async (req, res) => {
+  const { password } = req.body;
+  if (!password || password.length < 8)
+    return res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres' });
+  try {
+    const bcrypt = require('bcryptjs');
+    const hash = await bcrypt.hash(password, 12);
+    const { rows } = await pool.query(
+      'UPDATE users SET password_hash=$1 WHERE id=$2 RETURNING id, username',
+      [hash, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Usuario no encontrado' });
+    res.json({ ok: true, username: rows[0].username });
+  } catch (e) {
+    res.status(500).json({ error: 'Error interno' });
+  }
+});
+
 router.delete('/users/:id', auth, isSuperuser, async (req, res) => {
   if (parseInt(req.params.id) === req.user.id)
     return res.status(400).json({ error: 'No puedes eliminarte a ti mismo' });
