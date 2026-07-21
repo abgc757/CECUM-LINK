@@ -96,14 +96,19 @@ export default function Feed() {
   const startRecording = async (mode = facingMode) => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: mode },
-        audio: true,
+        video: { facingMode: mode, width: { ideal: 640, max: 1280 }, height: { ideal: 480, max: 720 } },
+        audio: { echoCancellation: true, noiseSuppression: true },
       })
       streamRef.current = stream          // ref estable para callbacks
       setCameraStream(stream)             // state para el render
       chunksRef.current = []
 
-      const mr = new MediaRecorder(stream, { mimeType: getRecorderMimeType() })
+      // Bitrate bajo para mantener el video en <2 MB incluso a 30 segundos
+      const mr = new MediaRecorder(stream, {
+        mimeType: getRecorderMimeType(),
+        videoBitsPerSecond: 400_000,
+        audioBitsPerSecond: 48_000,
+      })
       mediaRecorderRef.current = mr
       mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data) }
       mr.onstop = () => {
